@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Glasovni Asistent (Groq API)</title>
+    <title>Groq Glasovni i Tekstualni AI</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -21,11 +21,18 @@
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            max-width: 450px;
+            max-width: 500px;
             width: 100%;
         }
         h1 {
             color: #f5a623;
+            margin-bottom: 20px;
+        }
+        .controls-zone {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
             margin-bottom: 20px;
         }
         .btn-mic {
@@ -33,30 +40,54 @@
             border: none;
             color: #121212;
             font-weight: bold;
-            padding: 15px 30px;
-            font-size: 18px;
+            padding: 12px 25px;
+            font-size: 16px;
             border-radius: 50px;
             cursor: pointer;
             transition: background 0.3s, transform 0.2s;
-            box-shadow: 0 4px 10px rgba(245, 166, 35, 0.3);
+            width: 100%;
+            max-width: 250px;
         }
-        .btn-mic:hover {
-            background-color: #d48b11;
-        }
-        .btn-mic:active {
-            transform: scale(0.95);
-        }
+        .btn-mic:hover { background-color: #d48b11; }
         .btn-mic.listening {
             background-color: #ff2e63;
             color: white;
             animation: pulse 1.5s infinite;
         }
+        .input-group {
+            display: flex;
+            width: 100%;
+            gap: 10px;
+        }
+        .text-input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: white;
+            font-size: 16px;
+        }
+        .text-input:focus {
+            outline: none;
+            border-color: #f5a623;
+        }
+        .btn-send {
+            background-color: #00adb5;
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-send:hover { background-color: #007a80; }
         .output-box {
-            margin-top: 25px;
             padding: 15px;
             background-color: #2a2a2a;
             border-radius: 8px;
-            min-height: 50px;
+            min-height: 80px;
             text-align: left;
             color: #cccccc;
         }
@@ -75,9 +106,19 @@
 <body>
 
 <div class="container">
-    <h1>Groq Glasovni AI</h1>
-    <div id="status" class="status">Kliknite na dugme i postavite pitanje</div>
-    <button id="micBtn" class="btn-mic">Pokreni Mikrofon</button>
+    <h1>Groq Glasovni i Tekstualni AI</h1>
+    <div id="status" class="status">Unesite tekst ili kliknite na mikrofon</div>
+    
+    <div class="controls-zone">
+        <!-- Dugme za mikrofon -->
+        <button id="micBtn" class="btn-mic">🎙️ Pričaj (Mikrofon)</button>
+        
+        <!-- NOVO: Tekstualni okvir za kucanje pitanja -->
+        <div class="input-group">
+            <input type="text" id="textIn" class="text-input" placeholder="Upišite vaše pitanje ovdje..." autocomplete="off">
+            <button id="sendBtn" class="btn-send">Pošalji</button>
+        </div>
+    </div>
     
     <div class="output-box">
         <p><strong>Vi:</strong> <span id="userText">...</span></p>
@@ -87,62 +128,91 @@
 
 <script>
     // --- POSTAVKE ---
-    const GROQ_API_KEY = "TVOJ_GROQ_API_KLJUC"; // <--- Ovdje zalijepi svoj Groq API ključ
+    const GROQ_API_KEY = "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"; // <--- Ovdje zalijepi svoj Groq API ključ
     // ----------------
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const synth = window.speechSynthesis;
 
-    if (!SpeechRecognition) {
-        alert("Vaš preglednik ne podržava prepoznavanje glasa. Pokušajte u Google Chrome-u.");
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'hr-HR'; // Jezik prepoznavanja govora
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
     const micBtn = document.getElementById('micBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const textIn = document.getElementById('textIn');
     const statusText = document.getElementById('status');
     const userTextField = document.getElementById('userText');
     const aiTextField = document.getElementById('aiText');
 
-    micBtn.addEventListener('click', () => {
-        recognition.start();
+    let recognition;
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'hr-HR';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            micBtn.classList.add('listening');
+            micBtn.innerText = "Slušam...";
+            statusText.innerText = "Govorite sada...";
+        };
+
+        recognition.onspeechend = () => {
+            recognition.stop();
+            micBtn.classList.remove('listening');
+            micBtn.innerText = "🎙️ Pričaj (Mikrofon)";
+            statusText.innerText = "Razmišljam...";
+        };
+
+        recognition.onerror = (event) => {
+            statusText.innerText = "Greška sa mikrofonom: " + event.error;
+            micBtn.classList.remove('listening');
+            micBtn.innerText = "🎙️ Pričaj (Mikrofon)";
+        };
+
+        recognition.onresult = async (event) => {
+            const speechToText = event.results[0][0].transcript;
+            obradiPitanje(speechToText);
+        };
+
+        micBtn.addEventListener('click', () => {
+            recognition.start();
+        });
+    } else {
+        micBtn.style.display = 'none';
+        statusText.innerText = "Prepoznavanje glasa nije podržano u ovom browseru. Koristite unos teksta.";
+    }
+
+    // Pokretanje procesa na klik dugmeta "Pošalji"
+    sendBtn.addEventListener('click', () => {
+        izvrsiSlanjeTeksta();
     });
 
-    recognition.onstart = () => {
-        micBtn.classList.add('listening');
-        micBtn.innerText = "Slušam...";
-        statusText.innerText = "Govorite sada...";
-    };
+    // Omogućavanje slanja na pritisak tastera Enter u polju
+    textIn.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            izvrsiSlanjeTeksta();
+        }
+    });
 
-    recognition.onspeechend = () => {
-        recognition.stop();
-        micBtn.classList.remove('listening');
-        micBtn.innerText = "Pokreni Mikrofon";
-        statusText.innerText = "Razmišljam...";
-    };
+    function izvrsiSlanjeTeksta() {
+        const tekst = textIn.value.trim();
+        if (tekst !== "") {
+            statusText.innerText = "Razmišljam...";
+            obradiPitanje(tekst);
+            textIn.value = ""; // Briše unos nakon slanja
+        }
+    }
 
-    recognition.onerror = (event) => {
-        statusText.innerText = "Greška: " + event.error;
-        micBtn.classList.remove('listening');
-        micBtn.innerText = "Pokreni Mikrofon";
-    };
-
-    recognition.onresult = async (event) => {
-        const speechToText = event.results[0][0].transcript;
-        userTextField.innerText = speechToText;
+    // Glavna funkcija koja povezuje unos (glas ili tekst), API i izgovor
+    async function obradiPitanje(pitanje) {
+        userTextField.innerText = pitanje;
         
-        // Pozivanje Groq API-ja umjesto lokalnih odgovora
-        const aiResponse = await pozoviGroqAPI(speechToText);
+        // Pozivanje Groq API-ja
+        const aiResponse = await pozoviGroqAPI(pitanje);
         aiTextField.innerText = aiResponse;
         
-        // Glasovni odgovor
+        // Izgovor odgovora
         izgovori(aiResponse);
-    };
+    }
 
-    // Funkcija koja komunicira sa Groq API-jem
     async function pozoviGroqAPI(pitanje) {
         if (GROQ_API_KEY === "TVOJ_GROQ_API_KLJUC") {
             return "Greška: Niste unijeli svoj Groq API ključ u kod!";
@@ -156,7 +226,7 @@
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile", // Možeš koristiti i "llama3-8b-8192" za brže/jeftinije odgovore
+                    model: "llama-3.3-70b-versatile",
                     messages: [
                         {
                             role: "system",
@@ -164,7 +234,7 @@
                         },
                         {
                             role: "user",
-                            content: pitanje
+                            content: question = pitanje
                         }
                     ],
                     temperature: 0.7,
@@ -172,34 +242,31 @@
                 })
             });
 
-            if (!response.ok) {
-                throw new Error(`API Greška: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`API status: ${response.status}`);
 
             const data = await response.json();
             return data.choices[0].message.content;
 
         } catch (error) {
-            console.error("Greška pri pozivanju Groq-a:", error);
+            console.error(error);
             return "Došlo je do greške u komunikaciji sa AI serverom.";
         }
     }
 
-    // Funkcija za sintezu govora
     function izgovori(tekst) {
         if (synth.speaking) {
             synth.cancel();
         }
 
         const utterThis = new SpeechSynthesisUtterance(tekst);
-        utterThis.lang = 'hr-HR'; // Postavljeno na naš jezik
+        utterThis.lang = 'hr-HR'; // Koristi lokalni sistemski glas (BHS/Hrvatski/Srpski)
         utterThis.pitch = 1.0;
         utterThis.rate = 1.0;
 
         synth.speak(utterThis);
         
         utterThis.onend = () => {
-            statusText.innerText = "Kliknite na dugme i postavite pitanje";
+            statusText.innerText = "Unesite tekst ili kliknite na mikrofon";
         };
     }
 </script>
