@@ -2,77 +2,86 @@
 <html lang="bs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NH AI-Automation - Cloud Sistem</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { text-align: center; background-color: #1e1e1e; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); max-width: 500px; width: 100%; }
-        h1 { color: #00adb5; }
-        .btn-primary { background-color: #00adb5; border: none; color: white; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
-        #mainPanel { display: none; }
-        .output-box { padding: 15px; background-color: #2a2a2a; border-radius: 8px; margin-top: 15px; text-align: left; }
+        body { font-family: sans-serif; background: #121212; color: #fff; display: flex; justify-content: center; padding: 50px; }
+        .container { background: #1e1e1e; padding: 20px; border-radius: 10px; width: 400px; }
+        input { width: 100%; padding: 10px; margin: 5px 0; background: #2a2a2a; border: 1px solid #444; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; margin-top: 10px; cursor: pointer; background: #00adb5; border: none; color: white; border-radius: 5px; }
+        #mainPanel, #changePassPanel { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>NH AI-Automation 💬</h1>
+    <h1>NH AI-Automation</h1>
     
     <div id="authPanel">
-        <input type="email" id="authEmail" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px; background:#2a2a2a; border:1px solid #444; color:white;">
-        <input type="password" id="authPassword" placeholder="Lozinka" style="width:100%; padding:10px; background:#2a2a2a; border:1px solid #444; color:white;">
-        
-        <!-- Ovdje je sada samo jedno dugme Prijava -->
-        <button id="btnLogin" class="btn-primary">Prijava</button>
-        
-        <!-- Dugme Registracija -->
-        <button id="btnRegister" style="background:none; border:1px solid #00adb5; color:#00adb5; padding:10px; border-radius:8px; cursor:pointer; width:100%; margin-top:10px;">Registracija</button>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Lozinka">
+        <button id="btnLogin">Prijava</button>
+        <button id="btnRegister" style="background:#444;">Registracija</button>
     </div>
 
     <div id="mainPanel">
-        <div id="status" style="color: #00adb5; margin-bottom: 15px;">Sistem spreman</div>
-        <button id="micBtn" class="btn-primary">🎙️ Pokreni Razgovor</button>
-        
-        <div class="output-box">
-            <p><strong>Korisnik:</strong> <span id="userText">...</span></p>
-            <p><strong>Alex (AI):</strong> <span id="aiText">...</span></p>
-        </div>
-        <button id="btnLogout" style="background:none; border:none; color:red; cursor:pointer; margin-top:20px;">Odjavi se</button>
+        <p>Uspješno prijavljeni!</p>
+        <button id="btnShowPass">Promijeni lozinku</button>
+        <button id="btnLogout" style="background:red;">Odjava</button>
+    </div>
+
+    <div id="changePassPanel">
+        <input type="password" id="newPassword" placeholder="Nova lozinka">
+        <button id="btnUpdatePass">Ažuriraj lozinku</button>
     </div>
 </div>
 
 <script>
-    // 1. Definiši ključeve
     const SUPABASE_URL = "https://fbvwvkjurcbdnbrfknig.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi";
-    
-    // 2. Kreiraj klijenta koristeći 'db' (ne 'supabase'!)
-    // Ovime sprječavamo grešku "redeclaration"
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // 3. Poveži dugmad
-    const btnLogin = document.getElementById('btnLogin');
-    const btnRegister = document.getElementById('btnRegister');
-    
+
     // Prijava
-    btnLogin.addEventListener('click', async () => {
-        const { error } = await db.auth.signInWithPassword({
-            email: document.getElementById('authEmail').value,
-            password: document.getElementById('authPassword').value
+    document.getElementById('btnLogin').onclick = async () => {
+        const { error } = await db.auth.signInWithPassword({ 
+            email: document.getElementById('email').value, 
+            password: document.getElementById('password').value 
         });
-        if (error) alert("Greška: " + error.message); 
-        else location.reload();
-    });
+        if (error) alert(error.message); else location.reload();
+    };
 
     // Registracija
-    btnRegister.addEventListener('click', async () => {
-        const { error } = await db.auth.signUp({
-            email: document.getElementById('authEmail').value,
-            password: document.getElementById('authPassword').value
+    document.getElementById('btnRegister').onclick = async () => {
+        const { error } = await db.auth.signUp({ 
+            email: document.getElementById('email').value, 
+            password: document.getElementById('password').value 
         });
-        if (error) alert("Greška: " + error.message);
-        else alert("Registracija uspješna! Provjerite email.");
+        if (error) alert(error.message); else alert("Provjerite email!");
+    };
+
+    // UI prebacivanje
+    document.getElementById('btnShowPass').onclick = () => {
+        document.getElementById('mainPanel').style.display = 'none';
+        document.getElementById('changePassPanel').style.display = 'block';
+    };
+
+    // Promjena lozinke
+    document.getElementById('btnUpdatePass').onclick = async () => {
+        const { error } = await db.auth.updateUser({ password: document.getElementById('newPassword').value });
+        if (error) alert(error.message); else alert("Lozinka promijenjena!");
+    };
+
+    // Odjava
+    document.getElementById('btnLogout').onclick = async () => { 
+        await db.auth.signOut(); location.reload(); 
+    };
+
+    // Provjera sesije
+    db.auth.getSession().then(({ data }) => {
+        if (data.session) {
+            document.getElementById('authPanel').style.display = 'none';
+            document.getElementById('mainPanel').style.display = 'block';
+        }
     });
 </script>
 </body>
