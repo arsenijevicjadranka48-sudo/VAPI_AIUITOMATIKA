@@ -40,61 +40,33 @@
 </div>
 
 <script>
+    // 1. Definiši ključeve
     const SUPABASE_URL = "https://fbvwvkjurcbdnbrfknig.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi";
     
-    // Inicijalizacija klijenta pod imenom 'db'
+    // 2. KORISTI 'db' UMJESTO 'supabase' ZA SVE DALJE OPERACIJE
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // 3. Povezivanje sa HTML-om
+    const btnLogin = document.getElementById('btnLogin');
+    const btnRegister = document.getElementById('btnRegister');
 
-    // FUNKCIJE ZA PRIJAVU/REGISTRACIJU
-    document.getElementById('btnLogin').onclick = async () => {
-        const { error } = await db.auth.signInWithPassword({ 
-            email: document.getElementById('email').value, 
-            password: document.getElementById('password').value 
-        });
-        if (error) alert(error.message); else location.reload();
-    };
+    // Prijava (koristimo db.auth...)
+    btnLogin.addEventListener('click', async () => {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const { error } = await db.auth.signInWithPassword({ email, password });
+        if (error) alert("Greška: " + error.message);
+        else location.reload();
+    });
 
-    document.getElementById('btnRegister').onclick = async () => {
-        const { error } = await db.auth.signUp({ 
-            email: document.getElementById('email').value, 
-            password: document.getElementById('password').value 
-        });
-        if (error) alert(error.message); else alert("Registracija uspješna! Provjerite email.");
-    };
-
-    // UI LOGIKA - Prebacivanje između panela
-    document.getElementById('btnShowPass').onclick = () => {
-        document.getElementById('mainPanel').style.display = 'none';
-        document.getElementById('changePassPanel').style.display = 'block';
-    };
-
-    document.getElementById('btnCancelPass').onclick = () => {
-        document.getElementById('changePassPanel').style.display = 'none';
-        document.getElementById('mainPanel').style.display = 'block';
-    };
-
-    // FUNKCIJA ZA PROMJENU LOZINKE
-    document.getElementById('btnUpdatePass').onclick = async () => {
-        const newPass = document.getElementById('newPassword').value;
-        if(newPass.length < 6) return alert("Lozinka mora imati barem 6 znakova.");
-        
-        const { error } = await db.auth.updateUser({ password: newPass });
-        if (error) alert(error.message); 
-        else { alert("Lozinka uspješno promijenjena!"); location.reload(); }
-    };
-
-    // ODJAVA
-    document.getElementById('btnLogout').onclick = async () => { 
-        await db.auth.signOut(); location.reload(); 
-    };
-
-    // PROVJERA SESIJE (prikazuje pravi panel)
-    db.auth.getSession().then(({ data }) => {
-        if (data.session) {
-            document.getElementById('authPanel').style.display = 'none';
-            document.getElementById('mainPanel').style.display = 'block';
-        }
+    // Registracija (koristimo db.auth...)
+    btnRegister.addEventListener('click', async () => {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const { error } = await db.auth.signUp({ email, password });
+        if (error) alert("Greška: " + error.message);
+        else alert("Registracija uspješna, provjerite email!");
     });
 </script>
 </body>
