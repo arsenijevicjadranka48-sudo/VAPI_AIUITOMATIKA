@@ -86,13 +86,13 @@ button{
 </div>
 
 <script>
+// 1. Ispravna inicijalizacija klijenta
+const { createClient } = supabase; 
+
 const SUPABASE_URL = "https://fbxwvkjurcbdnbrfknig.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi"; 
 
-const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Konfiguracija asistenta
 const assistantVoice = {
@@ -115,6 +115,7 @@ function speak(text) {
     }
 }
 
+// Ostatak tvojih funkcija...
 const authPanel = document.getElementById("authPanel");
 const mainPanel = document.getElementById("mainPanel");
 const changePassPanel = document.getElementById("changePassPanel");
@@ -147,7 +148,7 @@ document.getElementById("btnLogin").addEventListener("click", async ()=>{
     if(error){ alert(error.message); return; }
     
     checkSession();
-    speak("Login successful. Welcome back!"); // Ovo će sada raditi
+    speak("Login successful. Welcome back!");
 });
 
 document.getElementById("btnLogout").addEventListener("click", async ()=>{
