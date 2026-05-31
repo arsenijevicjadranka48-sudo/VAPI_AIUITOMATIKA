@@ -47,15 +47,15 @@
     const SUPABASE_URL = "https://fbvwvkjurcbdnbrfknig.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi";
     
-    // 2. Kreiraj klijenta
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // 2. Kreiraj klijenta (koristimo window.supabase)
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // 3. Auth logika (Prijava i Registracija)
+    // 3. Auth logika
     const btnLogin = document.getElementById('btnLogin');
+    const btnRegister = document.getElementById('btnRegister');
     
-    // Funkcija za prijavu
     btnLogin.addEventListener('click', async () => {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await client.auth.signInWithPassword({
             email: document.getElementById('authEmail').value,
             password: document.getElementById('authPassword').value
         });
@@ -63,18 +63,22 @@
         else location.reload();
     });
 
-    // DODANO: Funkcija za registraciju
-    const btnRegister = document.getElementById('btnRegister');
     btnRegister.addEventListener('click', async () => {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await client.auth.signUp({
             email: document.getElementById('authEmail').value,
             password: document.getElementById('authPassword').value
         });
         if (error) alert("Greška pri registraciji: " + error.message);
-        else alert("Registracija uspješna! Provjerite email ako je potrebna potvrda.");
+        else alert("Registracija uspješna! Provjerite email.");
     });
 
-    // ... (ostatak koda ostavi kako jeste)
+    // 4. Provjera sesije
+    client.auth.getSession().then(({ data }) => {
+        if (data.session) {
+            document.getElementById('authPanel').style.display = 'none';
+            document.getElementById('mainPanel').style.display = 'block';
+        }
+    });
 </script>
 </body>
 </html>
