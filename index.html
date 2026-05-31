@@ -1,94 +1,58 @@
-.mode-section {
-            display: none;
-        }
-        .mode-section.active {
-            display: block;
-        }
-        .controls-zone {
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NH AI-Automation - Govorni Sistem</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            justify-content: center;
             align-items: center;
-            margin-bottom: 20px;
-        }
-        .btn-mic, .btn-twilio {
-            background-color: #00adb5;
-            border: none;
-            color: white;
-            font-weight: bold;
-            padding: 15px 30px;
-            font-size: 17px;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            width: 100%;
-            max-width: 280px;
-            box-shadow: 0 4px 10px rgba(0, 173, 181, 0.3);
-        }
-        .btn-mic:hover, .btn-twilio:hover { background-color: #007a80; }
-        .btn-mic.listening {
-            background-color: #ff2e63;
-            animation: pulse 1.5s infinite;
-        }
-        .form-group {
-            width: 100%;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        label {
-            font-size: 14px;
-            color: #ccc;
-        }
-        .input-group {
-            display: flex;
-            width: 100%;
-            gap: 10px;
-        }
-        .text-input, select {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background-color: #2a2a2a;
-            color: white;
-            font-size: 16px;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
             box-sizing: border-box;
+        }
+        .container {
+            text-align: center;
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
             width: 100%;
+            box-sizing: border-box;
         }
-        .text-input:focus, select:focus { outline: none; border-color: #00adb5; }
-        .btn-send {
-            background-color: #444;
-            border: none;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .output-box {
-            padding: 15px;
-            background-color: #2a2a2a;
-            border-radius: 8px;
-            min-height: 80px;
-            text-align: left;
-            color: #cccccc;
-        }
-        .status {
-            font-size: 15px;
-            color: #00adb5;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .logout-link {
-            display: block;
-            margin-top: 15px;
-            color: #ff2e63;
-            text-decoration: none;
-            font-size: 14px;
-            cursor: pointer;
-        }
+        h1 { color: #00adb5; margin-bottom: 5px; }
+        .brand-subtitle { font-size: 14px; color: #888; margin-bottom: 20px; letter-spacing: 1px; }
+        .auth-box { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+        .auth-box h2 { color: #00adb5; text-align: center; margin-top: 0; }
+        .auth-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-primary { background-color: #00adb5; border: none; color: white; font-weight: bold; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; }
+        .btn-secondary { background-color: #333; border: 1px solid #444; color: white; font-weight: bold; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; }
+        #mainPanel { display: none; }
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .tab-btn { background: none; border: 2px solid #444; color: #aaa; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .tab-btn.active { background-color: #00adb5; border-color: #00adb5; color: white; }
+        .mode-section { display: none; }
+        .mode-section.active { display: block; }
+        .controls-zone { display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 20px; }
+        .btn-mic, .btn-twilio { background-color: #00adb5; border: none; color: white; font-weight: bold; padding: 15px 30px; font-size: 17px; border-radius: 50px; cursor: pointer; width: 100%; max-width: 280px; box-shadow: 0 4px 10px rgba(0, 173, 181, 0.3); }
+        .btn-mic.listening { background-color: #ff2e63; animation: pulse 1.5s infinite; }
+        .form-group { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        label { font-size: 14px; color: #ccc; }
+        .input-group { display: flex; width: 100%; gap: 10px; }
+        .text-input, select { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background-color: #2a2a2a; color: white; font-size: 16px; box-sizing: border-box; width: 100%; }
+        .btn-send { background-color: #444; border: none; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .output-box { padding: 15px; background-color: #2a2a2a; border-radius: 8px; min-height: 80px; text-align: left; color: #cccccc; margin-top: 15px; }
+        .status { font-size: 15px; color: #00adb5; font-weight: bold; margin-bottom: 15px; }
+        .logout-link { display: block; margin-top: 20px; color: #ff2e63; text-decoration: none; font-size: 14px; cursor: pointer; }
+        .config-box { border: 1px dashed #444; padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #1a1a1a; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255, 46, 99, 0.4); }
             70% { box-shadow: 0 0 0 15px rgba(255, 46, 99, 0); }
@@ -100,16 +64,16 @@
 
 <div class="container">
     <h1>NH AI-Automation 💬</h1>
-    <div class="brand-subtitle">GLASOVNI AGENT CENTAR</div>
+    <div class="brand-subtitle">SaaS GLASOVNA PLATFORMA</div>
     
     <div id="authPanel" class="auth-box">
         <h2>Prijava na Platformu</h2>
         <div class="form-group">
-            <label for="authEmail">Email adresa:</label>
+            <label>Email adresa:</label>
             <input type="email" id="authEmail" class="text-input" placeholder="ime@primjer.com">
         </div>
         <div class="form-group">
-            <label for="authPassword">Lozinka:</label>
+            <label>Lozinka:</label>
             <input type="password" id="authPassword" class="text-input" placeholder="******">
         </div>
         <div class="auth-buttons">
@@ -120,35 +84,48 @@
 
     <div id="mainPanel">
         <div class="tabs">
-            <button id="tabCable" class="tab-btn active">📱 Moj Mobitel (Kabal)</button>
-            <button id="tabTwilio" class="tab-btn">🌐 Twilio Cloud</button>
+            <button id="tabCable" class="tab-btn active">📱 Kabal Mod</button>
+            <button id="tabTwilio" class="tab-btn">🌐 Moj Twilio Račun</button>
         </div>
 
         <div id="status" class="status">Sistem spreman</div>
         
         <div id="sectionCable" class="mode-section active">
             <div class="controls-zone">
-                <button id="micBtn" class="btn-mic">🎙️ Pokreni Tečni Razgovor</button>
+                <button id="micBtn" class="btn-mic">🎙️ Pokreni Razgovor</button>
                 <div class="input-group">
-                    <input type="text" id="textIn" class="text-input" placeholder="Ili upišite pitanje..." autocomplete="off">
+                    <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje...">
                     <button id="sendBtn" class="btn-send">Pošalji</button>
                 </div>
             </div>
         </div>
 
         <div id="sectionTwilio" class="mode-section">
-            <div class="controls-zone">
+            <div class="config-box">
+                <h3 style="margin-top:0; color:#00adb5; font-size:16px;">🔑 Unesite Vaše Twilio Ključeve</h3>
                 <div class="form-group">
-                    <label for="twilio-numbers">Odaberi moj Twilio broj:</label>
+                    <label>Twilio Account SID:</label>
+                    <input type="text" id="userSid" class="text-input" placeholder="ACxxxxxxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label>Twilio Auth Token:</label>
+                    <input type="password" id="userToken" class="text-input" placeholder="Token sa vaše konzole">
+                </div>
+                <button id="btnSaveTwilio" class="btn-secondary" style="width:100%; padding:8px;">💾 Spasi Postavke</button>
+            </div>
+
+            <div class="controls-zone" id="twilioCallArea" style="opacity: 0.5; pointer-events: none;">
+                <div class="form-group">
+                    <label>Odaberi Vaš Twilio broj:</label>
                     <select id="twilio-numbers">
-                        <option value="">Učitavam brojeve...</option>
+                        <option value="">Prvo spasite ključeve...</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="client-phone">Broj telefona klijenta za poziv:</label>
+                    <label>Broj klijenta za poziv:</label>
                     <input type="text" id="client-phone" class="text-input" placeholder="+38761XXXXXX">
                 </div>
-                <button id="startTwilioCallBtn" class="btn-twilio">📞 Pokreni Poziv (Preko Oblaka)</button>
+                <button id="startTwilioCallBtn" class="btn-twilio">📞 Pokreni Poziv</button>
             </div>
         </div>
         
@@ -162,55 +139,35 @@
 </div>
 
 <script>
-    // --- SUPABASE PROKCIJE ---
     const SUPABASE_URL = "https://fbvwvkjurcbdnbrfknig.supabase.co";
-    // Ovdje unesi svoj javni "anon" ključ iz Supabase postavki (Settings -> API)
     const SUPABASE_ANON_KEY = "TVOJ_SUPABASE_ANON_PUBLIC_KLJUC_OVDJE"; 
     
-    // Inicijalizacija Supabase klijenta na frontendu
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // -------------------------
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const synth = window.speechSynthesis;
 
-    // Auth Elementi
-    const authPanel = document.getElementById('authPanel');
-    const mainPanel = document.getElementById('mainPanel');
-    const authEmail = document.getElementById('authEmail');
-    const authPassword = document.getElementById('authPassword');
-    const btnLogin = document.getElementById('btnLogin');
-    const btnRegister = document.getElementById('btnRegister');
-    const btnLogout = document.getElementById('btnLogout');
-
-    // Kontrolni elementi
-    const micBtn = document.getElementById('micBtn');
-    const sendBtn = document.getElementById('sendBtn');
-    const textIn = document.getElementById('textIn');
-    const statusText = document.getElementById('status');
-    const userTextField = document.getElementById('userText');
-    const aiTextField = document.getElementById('aiText');
+    // DOM Elementi
+    const authPanel = document.getElementById('authPanel'), mainPanel = document.getElementById('mainPanel');
+    const authEmail = document.getElementById('authEmail'), authPassword = document.getElementById('authPassword');
+    const btnLogin = document.getElementById('btnLogin'), btnRegister = document.getElementById('btnRegister'), btnLogout = document.getElementById('btnLogout');
+    const micBtn = document.getElementById('micBtn'), sendBtn = document.getElementById('sendBtn'), textIn = document.getElementById('textIn'), statusText = document.getElementById('status');
+    const userTextField = document.getElementById('userText'), aiTextField = document.getElementById('aiText');
+    const tabCable = document.getElementById('tabCable'), tabTwilio = document.getElementById('tabTwilio'), sectionCable = document.getElementById('sectionCable'), sectionTwilio = document.getElementById('sectionTwilio');
     
-    const tabCable = document.getElementById('tabCable');
-    const tabTwilio = document.getElementById('tabTwilio');
-    const sectionCable = document.getElementById('sectionCable');
-    const sectionTwilio = document.getElementById('sectionTwilio');
-    const twilioNumbersSelect = document.getElementById('twilio-numbers');
-    const clientPhoneInput = document.getElementById('client-phone');
-    const startTwilioCallBtn = document.getElementById('startTwilioCallBtn');
+    // Korisnički Twilio elementi
+    const userSidInput = document.getElementById('userSid'), userTokenInput = document.getElementById('userToken'), btnSaveTwilio = document.getElementById('btnSaveTwilio');
+    const twilioCallArea = document.getElementById('twilioCallArea'), twilioNumbersSelect = document.getElementById('twilio-numbers'), clientPhoneInput = document.getElementById('client-phone'), startTwilioCallBtn = document.getElementById('startTwilioCallBtn');
 
-    let recognition;
-    let isConversationActive = false; 
-    let trenutniKorisnikId = null;
+    let recognition, isConversationActive = false, trenutniKorisnikId = null;
 
-    // --- PROVJERA DA LI JE KORISNIK VEĆ ULOGOVAN ---
     async function provjeriSesiju() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
             trenutniKorisnikId = session.user.id;
             authPanel.style.display = 'none';
             mainPanel.style.display = 'block';
-            statusText.innerText = `Ulogovani ste kao: ${session.user.email}`;
+            statusText.innerText = "Ulogovani ste.";
+            ucitajSpaseneKljuceveIzBaze();
         } else {
             authPanel.style.display = 'flex';
             mainPanel.style.display = 'none';
@@ -218,187 +175,53 @@
     }
     provjeriSesiju();
 
-    // --- REGISTRACIJA NOVOG KORISNIKA ---
-    btnRegister.addEventListener('click', async () => {
-        const email = authEmail.value.trim();
-        const password = authPassword.value.trim();
-        
-        if(!email || !password) { alert('Unesite email i lozinku!'); return; }
-
-        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        
-        if (error) {
-            alert('Greška pri registraciji: ' + error.message);
-        } else {
-            alert('Registracija uspješna! Provjerite email za potvrdu (ako je uključena) ili se odmah prijavite.');
-        }
-    });
-
-    // --- PRIJAVA (LOGIN) ---
+    // Login/Register Akcije
     btnLogin.addEventListener('click', async () => {
-        const email = authEmail.value.trim();
-        const password = authPassword.value.trim();
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email: authEmail.value, password: authPassword.value });
+        if (error) alert(error.message); else provjeriSesiju();
+    });
+    btnRegister.addEventListener('click', async () => {
+        const { error } = await supabaseClient.auth.signUp({ email: authEmail.value, password: authPassword.value });
+        if (error) alert(error.message); else alert('Uspješno! Sada se prijavite.');
+    });
+    btnLogout.addEventListener('click', async () => { await supabaseClient.auth.signOut(); provjeriSesiju(); });
 
-        if(!email || !password) { alert('Unesite email i lozinku!'); return; }
+    // SPASAVANJE KLJUČEVA U SUPABASE
+    btnSaveTwilio.addEventListener('click', async () => {
+        const sid = userSidInput.value.trim();
+        const token = userTokenInput.value.trim();
+        if(!sid || !token) { alert('Unesite oba polja!'); return; }
 
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { error } = await supabaseClient.from('user_twilio_settings').upsert({
+            id: trenutniKorisnikId,
+            twilio_account_sid: sid,
+            twilio_auth_token: token,
+            updated_at: new Date()
+        });
 
         if (error) {
-            alert('Neuspješna prijava: ' + error.message);
+            alert('Greška pri spašavanju: ' + error.message);
         } else {
-            trenutniKorisnikId = data.user.id;
-            authPanel.style.display = 'none';
-            mainPanel.style.display = 'block';
-            statusText.innerText = `Dobrodošli: ${data.user.email}`;
+            alert('Postavke uspješno spašene!');
+            ucitajTwilioBrojeveKorisnika();
         }
     });
 
-    // --- ODJAVA (LOGOUT) ---
-    btnLogout.addEventListener('click', async () => {
-        await supabaseClient.auth.signOut();
-        trenutniKorisnikId = null;
-        if(isConversationActive) zaustaviKablovskiMod();
-        authPanel.style.display = 'flex';
-        mainPanel.style.display = 'none';
-        authEmail.value = '';
-        authPassword.value = '';
-    });
-
-    // --- LOGIKA ZA TABOVE ---
-    tabCable.addEventListener('click', () => { switchTab('cable'); });
-    tabTwilio.addEventListener('click', () => { switchTab('twilio'); ucitajTwilioBrojeve(); });
-
-    function switchTab(mode) {
-        if(mode === 'cable') {
-            tabCable.classList.add('active');
-            tabTwilio.classList.remove('active');
-            sectionCable.classList.add('active');
-            sectionTwilio.classList.remove('active');
-            statusText.innerText = "Mod preko kabla aktivan.";
-            if(isConversationActive) zaustaviKablovskiMod();
-        } else {
-            tabTwilio.classList.add('active');
-            tabCable.classList.remove('active');
-            sectionTwilio.classList.add('active');
-            sectionCable.classList.remove('active');
-            statusText.innerText = "Twilio Cloud mod aktivan.";
-            if(isConversationActive) zaustaviKablovskiMod();
+    async function ucitajSpaseneKljuceveIzBaze() {
+        const { data, error } = await supabaseClient.from('user_twilio_settings').select('*').single();
+        if (data) {
+            userSidInput.value = data.twilio_account_sid;
+            userTokenInput.value = data.twilio_auth_token;
+            ucitajTwilioBrojeveKorisnika();
         }
     }
 
-    // --- MOD 1: KABAL LOGIKA (POZIVA TVOJ ZAŠTIĆENI SERVER) ---
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'bs-BA'; 
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        recognition.onstart = () => {
-            micBtn.classList.add('listening');
-            micBtn.innerText = "🛑 Zaustavi Razgovor";
-            statusText.innerText = "Slušam zvuk iz telefona...";
-        };
-
-        recognition.onerror = (event) => {
-            if (event.error !== 'no-speech') {
-                statusText.innerText = "Greška: " + event.error;
-            }
-        };
-
-        recognition.onresult = async (event) => {
-            const speechToText = event.results[event.results.length - 1][0].transcript;
-            recognition.stop(); 
-            statusText.innerText = "Alex razmišlja...";
-            await obradiPitanje(speechToText);
-        };
-
-        recognition.onend = () => {
-            if (isConversationActive && !synth.speaking) {
-                recognition.start();
-            }
-        };
-
-        micBtn.addEventListener('click', () => {
-            if (!isConversationActive) {
-                isConversationActive = true;
-                recognition.start();
-            } else {
-                zaustaviKablovskiMod();
-            }
-        });
-    }
-
-    function zaustaviKablovskiMod() {
-        isConversationActive = false;
-        recognition.stop();
-        if (synth.speaking) synth.cancel();
-        micBtn.classList.remove('listening');
-        micBtn.innerText = "🎙️ Pokreni Tečni Razgovor";
-        statusText.innerText = "Sistem zaustavljen.";
-    }
-
-    sendBtn.addEventListener('click', () => izvrsiSlanjeTeksta());
-    textIn.addEventListener('keypress', (e) => { if (e.key === 'Enter') izvrsiSlanjeTeksta(); });
-
-    function izvrsiSlanjeTeksta() {
-        const tekst = textIn.value.trim();
-        if (tekst !== "") {
-            if (isConversationActive) { isConversationActive = false; recognition.stop(); }
-            statusText.innerText = "Alex razmišlja...";
-            obradiPitanje(tekst);
-            textIn.value = "";
-        }
-    }
-
-    async function obradiPitanje(pitanje) {
-        userTextField.innerText = pitanje;
-        const aiResponse = await pozoviZaštićeniBackend(pitanje);
-        aiTextField.innerText = aiResponse;
-        izgovori(aiResponse);
-    }
-
-    // PROMJENA: Pozivamo tvoj Node.js server na portu 3000 i šaljemo userId ulogovanog korisnika
-    async function pozoviZaštićeniBackend(pitanje) {
+    // DOVLAČENJE BROJEVA SA BACKENDA ZA TOG SPECIFIČNOG KORISNIKA
+    async function ucitajTwilioBrojeveKorisnika() {
+        twilioNumbersSelect.innerHTML = '<option>Učitavam vaše brojeve...</option>';
         try {
-            const response = await fetch("http://localhost:3000/api/chat-process", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message: pitanje,
-                    userId: trenutniKorisnikId // Šaljemo ID korisnika sa Supabase-a na provjeru kredita
-                })
-            });
-            if (!response.ok) throw new Error();
-            const data = await response.json();
-            return data.reply;
-        } catch (error) {
-            return "Veza sa serverom u prekidu.";
-        }
-    }
-
-    function izgovori(tekst) {
-        if (synth.speaking) synth.cancel();
-        const utterThis = new SpeechSynthesisUtterance(tekst);
-        utterThis.lang = 'hr-HR';
-        utterThis.pitch = 1.0;
-        utterThis.rate = 1.08; 
-
-        synth.speak(utterThis);
-        statusText.innerText = "Alex odgovara...";
-
-        utterThis.onend = () => {
-            if (isConversationActive) {
-                statusText.innerText = "Slušam vas... Govorite slobodno.";
-                recognition.start();
-            }
-        };
-    }
-
-    // --- MOD 2: TWILIO LOGIKA ---
-    async function ucitajTwilioBrojeve() {
-        twilioNumbersSelect.innerHTML = '<option>Učitavam brojeve...</option>';
-        try {
-            const response = await fetch('http://localhost:3000/api/get-my-numbers');
+            // Šaljemo userId na naš server da server zna čije ključeve čita iz baze
+            const response = await fetch(`http://localhost:3000/api/get-my-numbers?userId=${trenutniKorisnikId}`);
             const data = await response.json();
 
             if (data.success && data.numbers.length > 0) {
@@ -406,47 +229,41 @@
                 data.numbers.forEach(num => {
                     const option = document.createElement('option');
                     option.value = num.phoneNumber;
-                    option.textContent = `${num.friendlyName} (${num.phoneNumber})`;
+                    option.textContent = num.friendlyName;
                     twilioNumbersSelect.appendChild(option);
                 });
+                twilioCallArea.style.opacity = "1";
+                twilioCallArea.style.pointerEvents = "auto";
             } else {
-                twilioNumbersSelect.innerHTML = '<option value="">Nema zakupljenih brojeva</option>';
+                twilioNumbersSelect.innerHTML = '<option>Nema zakupljenih brojeva na vašem računu.</option>';
             }
         } catch (err) {
-            twilioNumbersSelect.innerHTML = '<option value="+1234567890">Testni Broj (+1234567890)</option>';
-            statusText.innerText = "Prikazan testni mod (backend offline).";
+            twilioNumbersSelect.innerHTML = '<option>Greška pri učitavanju.</option>';
         }
     }
 
+    // POKRETANJE POZIVA PREKO KORISNIČKOG RAČUNA
     startTwilioCallBtn.addEventListener('click', async () => {
-        const izabraniTwilioBroj = twilioNumbersSelect.value;
-        const brojKlijenta = clientPhoneInput.value.trim();
-
-        if (!brojKlijenta) { alert('Unesite broj klijenta.'); return; }
-        statusText.innerText = "Pokrećem Twilio poziv...";
-
+        statusText.innerText = "Inicijalizujem vaš poziv...";
         try {
-            const callResponse = await fetch('http://localhost:3000/api/trigger-twilio-call', {
+            const response = await fetch('http://localhost:3000/api/trigger-twilio-call', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fromNumber: izabraniTwilioBroj, 
-                    toNumber: brojKlijenta,
-                    userId: trenutniKorisnikId // Prosljeđujemo korisnika
+                    fromNumber: twilioNumbersSelect.value,
+                    toNumber: clientPhoneInput.value.trim(),
+                    userId: trenutniKorisnikId // Server će na osnovu ovoga povući njegove ključeve za poziv
                 })
             });
-
-            const callData = await callResponse.json();
-            if (callData.success) {
-                statusText.innerText = "Poziv uspješno upućen!";
-            } else {
-                statusText.innerText = "Greška: " + callData.message;
-            }
-        } catch (error) {
-            statusText.innerText = "Greška pri spajanju sa serverom.";
-        }
+            const data = await response.json();
+            if(data.success) statusText.innerText = "Poziv uspješno pokrenut na vašem Twiliu!";
+            else statusText.innerText = "Greška: " + data.message;
+        } catch (e) { statusText.innerText = "Greška u konekciji sa serverom."; }
     });
-</script>
 
+    // Tabovi i Kabal mod ostaju isti (pozivaju zaštićeni chat preko localhost:3000)
+    tabCable.addEventListener('click', () => { sectionCable.classList.add('active'); sectionTwilio.classList.remove('active'); tabCable.classList.add('active'); tabTwilio.classList.remove('active'); });
+    tabTwilio.addEventListener('click', () => { sectionTwilio.classList.add('active'); sectionCable.classList.remove('active'); tabTwilio.classList.add('active'); tabCable.classList.remove('active'); });
+</script>
 </body>
 </html>
