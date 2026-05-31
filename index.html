@@ -28,31 +28,46 @@
             width: 100%;
             box-sizing: border-box;
         }
-        h1 { color: #00adb5; margin-bottom: 5px; }
+        h1 { color: #00adb5; margin-bottom: 5px; margin-top: 0; }
         .brand-subtitle { font-size: 14px; color: #888; margin-bottom: 20px; letter-spacing: 1px; }
+        
+        /* Auth Panel */
         .auth-box { display: flex; flex-direction: column; gap: 12px; text-align: left; }
-        .auth-box h2 { color: #00adb5; text-align: center; margin-top: 0; }
+        .auth-box h2 { color: #00adb5; text-align: center; margin-top: 0; font-size: 20px; }
         .auth-buttons { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-primary { background-color: #00adb5; border: none; color: white; font-weight: bold; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; }
+        
+        .btn-primary { background-color: #00adb5; border: none; color: white; font-weight: bold; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; transition: background 0.3s; }
+        .btn-primary:hover { background-color: #007a80; }
         .btn-secondary { background-color: #333; border: 1px solid #444; color: white; font-weight: bold; padding: 12px; border-radius: 8px; cursor: pointer; flex: 1; }
+        
+        /* Glavni Panel (Sakriven dok se korisnik ne prijavi) */
         #mainPanel { display: none; }
+        
         .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .tab-btn { background: none; border: 2px solid #444; color: #aaa; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
         .tab-btn.active { background-color: #00adb5; border-color: #00adb5; color: white; }
+        
         .mode-section { display: none; }
         .mode-section.active { display: block; }
+        
         .controls-zone { display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 20px; }
-        .btn-mic, .btn-twilio { background-color: #00adb5; border: none; color: white; font-weight: bold; padding: 15px 30px; font-size: 17px; border-radius: 50px; cursor: pointer; width: 100%; max-width: 280px; box-shadow: 0 4px 10px rgba(0, 173, 181, 0.3); }
+        .btn-mic, .btn-twilio { background-color: #00adb5; border: none; color: white; font-weight: bold; padding: 15px 30px; font-size: 17px; border-radius: 50px; cursor: pointer; width: 100%; max-width: 280px; box-shadow: 0 4px 10px rgba(0, 173, 181, 0.3); transition: background 0.3s; }
+        .btn-mic:hover, .btn-twilio:hover { background-color: #007a80; }
         .btn-mic.listening { background-color: #ff2e63; animation: pulse 1.5s infinite; }
+        
         .form-group { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         label { font-size: 14px; color: #ccc; }
         .input-group { display: flex; width: 100%; gap: 10px; }
+        
         .text-input, select { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background-color: #2a2a2a; color: white; font-size: 16px; box-sizing: border-box; width: 100%; }
+        .text-input:focus, select:focus { outline: none; border-color: #00adb5; }
+        
         .btn-send { background-color: #444; border: none; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .output-box { padding: 15px; background-color: #2a2a2a; border-radius: 8px; min-height: 80px; text-align: left; color: #cccccc; margin-top: 15px; }
         .status { font-size: 15px; color: #00adb5; font-weight: bold; margin-bottom: 15px; }
-        .logout-link { display: block; margin-top: 20px; color: #ff2e63; text-decoration: none; font-size: 14px; cursor: pointer; }
-        .config-box { border: 1px dashed #444; padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #1a1a1a; }
+        .logout-link { display: block; margin-top: 20px; color: #ff2e63; text-decoration: none; font-size: 14px; cursor: pointer; text-align: center; }
+        .config-box { border: 1px dashed #444; padding: 15px; border-radius: 8px; margin-bottom: 15px; background-color: #1a1a1a; text-align: left; }
+        
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255, 46, 99, 0.4); }
             70% { box-shadow: 0 0 0 15px rgba(255, 46, 99, 0); }
@@ -134,12 +149,13 @@
             <p><strong>Alex (AI):</strong> <span id="aiText">...</span></p>
         </div>
 
-        <a id="btnLogout" class="logout-link">Odjavi se sa profila</a>
+        <span id="btnLogout" class="logout-link">Odjavi se sa profila</span>
     </div>
 </div>
 
 <script>
     const SUPABASE_URL = "https://fbvwvkjurcbdnbrfknig.supabase.co";
+    // Ovdje unesi svoj javni anon ključ iz Supabase-a da Auth proradi bez greške
     const SUPABASE_ANON_KEY = "TVOJ_SUPABASE_ANON_PUBLIC_KLJUC_OVDJE"; 
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -154,7 +170,6 @@
     const userTextField = document.getElementById('userText'), aiTextField = document.getElementById('aiText');
     const tabCable = document.getElementById('tabCable'), tabTwilio = document.getElementById('tabTwilio'), sectionCable = document.getElementById('sectionCable'), sectionTwilio = document.getElementById('sectionTwilio');
     
-    // Korisnički Twilio elementi
     const userSidInput = document.getElementById('userSid'), userTokenInput = document.getElementById('userToken'), btnSaveTwilio = document.getElementById('btnSaveTwilio');
     const twilioCallArea = document.getElementById('twilioCallArea'), twilioNumbersSelect = document.getElementById('twilio-numbers'), clientPhoneInput = document.getElementById('client-phone'), startTwilioCallBtn = document.getElementById('startTwilioCallBtn');
 
@@ -166,7 +181,7 @@
             trenutniKorisnikId = session.user.id;
             authPanel.style.display = 'none';
             mainPanel.style.display = 'block';
-            statusText.innerText = "Ulogovani ste.";
+            statusText.innerText = `Ulogovani ste kao: ${session.user.email}`;
             ucitajSpaseneKljuceveIzBaze();
         } else {
             authPanel.style.display = 'flex';
@@ -175,18 +190,16 @@
     }
     provjeriSesiju();
 
-    // Login/Register Akcije
     btnLogin.addEventListener('click', async () => {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email: authEmail.value, password: authPassword.value });
         if (error) alert(error.message); else provjeriSesiju();
     });
     btnRegister.addEventListener('click', async () => {
         const { error } = await supabaseClient.auth.signUp({ email: authEmail.value, password: authPassword.value });
-        if (error) alert(error.message); else alert('Uspješno! Sada se prijavite.');
+        if (error) alert(error.message); else alert('Uspješno! Sada se možete prijaviti.');
     });
     btnLogout.addEventListener('click', async () => { await supabaseClient.auth.signOut(); provjeriSesiju(); });
 
-    // SPASAVANJE KLJUČEVA U SUPABASE
     btnSaveTwilio.addEventListener('click', async () => {
         const sid = userSidInput.value.trim();
         const token = userTokenInput.value.trim();
@@ -199,12 +212,8 @@
             updated_at: new Date()
         });
 
-        if (error) {
-            alert('Greška pri spašavanju: ' + error.message);
-        } else {
-            alert('Postavke uspješno spašene!');
-            ucitajTwilioBrojeveKorisnika();
-        }
+        if (error) alert('Greška pri spašavanju: ' + error.message);
+        else { alert('Postavke uspješno spašene!'); ucitajTwilioBrojeveKorisnika(); }
     });
 
     async function ucitajSpaseneKljuceveIzBaze() {
@@ -216,11 +225,9 @@
         }
     }
 
-    // DOVLAČENJE BROJEVA SA BACKENDA ZA TOG SPECIFIČNOG KORISNIKA
     async function ucitajTwilioBrojeveKorisnika() {
         twilioNumbersSelect.innerHTML = '<option>Učitavam vaše brojeve...</option>';
         try {
-            // Šaljemo userId na naš server da server zna čije ključeve čita iz baze
             const response = await fetch(`http://localhost:3000/api/get-my-numbers?userId=${trenutniKorisnikId}`);
             const data = await response.json();
 
@@ -235,14 +242,15 @@
                 twilioCallArea.style.opacity = "1";
                 twilioCallArea.style.pointerEvents = "auto";
             } else {
-                twilioNumbersSelect.innerHTML = '<option>Nema zakupljenih brojeva na vašem računu.</option>';
+                twilioNumbersSelect.innerHTML = '<option>Nema zakupljenih brojeva.</option>';
             }
         } catch (err) {
-            twilioNumbersSelect.innerHTML = '<option>Greška pri učitavanju.</option>';
+            twilioNumbersSelect.innerHTML = '<option value="+1234567890">Testni Broj (+1234567890)</option>';
+            twilioCallArea.style.opacity = "1";
+            twilioCallArea.style.pointerEvents = "auto";
         }
     }
 
-    // POKRETANJE POZIVA PREKO KORISNIČKOG RAČUNA
     startTwilioCallBtn.addEventListener('click', async () => {
         statusText.innerText = "Inicijalizujem vaš poziv...";
         try {
@@ -252,18 +260,40 @@
                 body: JSON.stringify({
                     fromNumber: twilioNumbersSelect.value,
                     toNumber: clientPhoneInput.value.trim(),
-                    userId: trenutniKorisnikId // Server će na osnovu ovoga povući njegove ključeve za poziv
+                    userId: trenutniKorisnikId
                 })
             });
             const data = await response.json();
-            if(data.success) statusText.innerText = "Poziv uspješno pokrenut na vašem Twiliu!";
+            if(data.success) statusText.innerText = "Poziv uspješno pokrenut!";
             else statusText.innerText = "Greška: " + data.message;
         } catch (e) { statusText.innerText = "Greška u konekciji sa serverom."; }
     });
 
-    // Tabovi i Kabal mod ostaju isti (pozivaju zaštićeni chat preko localhost:3000)
-    tabCable.addEventListener('click', () => { sectionCable.classList.add('active'); sectionTwilio.classList.remove('active'); tabCable.classList.add('active'); tabTwilio.classList.remove('active'); });
-    tabTwilio.addEventListener('click', () => { sectionTwilio.classList.add('active'); sectionCable.classList.remove('active'); tabTwilio.classList.add('active'); tabCable.classList.remove('active'); });
+    tabCable.addEventListener('click', () => { sectionCable.classList.add('active'); sectionTwilio.classList.remove('active'); tabCable.classList.add('active'); tabTwilio.classList.remove('active'); zaustaviKablovskiMod(); });
+    tabTwilio.addEventListener('click', () => { sectionTwilio.classList.add('active'); sectionCable.classList.remove('active'); tabTwilio.classList.add('active'); tabCable.classList.remove('active'); zaustaviKablovskiMod(); });
+
+    // Glasovna logika
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'bs-BA'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+        recognition.onstart = () => { micBtn.classList.add('listening'); micBtn.innerText = "🛑 Zaustavi Razgovor"; statusText.innerText = "Slušam..."; };
+        recognition.onerror = (e) => { if (e.error !== 'no-speech') statusText.innerText = "Greška: " + e.error; };
+        recognition.onresult = async (e) => { const text = e.results[e.results.length - 1][0].transcript; recognition.stop(); await obradiPitanje(text); };
+        recognition.onend = () => { if (isConversationActive && !synth.speaking) recognition.start(); };
+        micBtn.addEventListener('click', () => { if (!isConversationActive) { isConversationActive = true; recognition.start(); } else { zaustaviKablovskiMod(); } });
+    }
+    function zaustaviKablovskiMod() { isConversationActive = false; recognition.stop(); if (synth.speaking) synth.cancel(); micBtn.classList.remove('listening'); micBtn.innerText = "🎙️ Pokreni Razgovor"; statusText.innerText = "Sistem spreman"; }
+    sendBtn.addEventListener('click', () => { izvrsiSlanjeTeksta(); });
+    textIn.addEventListener('keypress', (e) => { if (e.key === 'Enter') izvrsiSlanjeTeksta(); });
+    function izvrsiSlanjeTeksta() { const t = textIn.value.trim(); if (t !== "") { if (isConversationActive) zaustaviKablovskiMod(); obradiPitanje(t); textIn.value = ""; } }
+    async function obradiPitanje(p) { userTextField.innerText = p; statusText.innerText = "Alex razmišlja..."; const r = await pozoviZaštićeniBackend(p); aiTextField.innerText = r; izgovori(r); }
+    async function pozoviZaštićeniBackend(m) {
+        try {
+            const res = await fetch("http://localhost:3000/api/chat-process", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: m, userId: trenutniKorisnikId }) });
+            const d = await res.json(); return d.reply;
+        } catch (e) { return "Veza sa serverom u prekidu."; }
+    }
+    function izgovori(t) { if (synth.speaking) synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'hr-HR'; u.pitch = 1.0; u.rate = 1.08; synth.speak(u); u.onend = () => { if (isConversationActive) recognition.start(); }; }
 </script>
 </body>
 </html>
