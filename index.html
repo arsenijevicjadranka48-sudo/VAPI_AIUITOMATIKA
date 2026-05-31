@@ -20,8 +20,8 @@
     <h1>NH AI-Automation 💬</h1>
     
     <div id="authPanel">
-        <input type="email" id="authEmail" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px;">
-        <input type="password" id="authPassword" placeholder="Lozinka" style="width:100%; padding:10px;">
+        <input type="email" id="authEmail" placeholder="Email" style="width:100%; padding:10px; margin-bottom:10px; background:#2a2a2a; border:1px solid #444; color:white;">
+        <input type="password" id="authPassword" placeholder="Lozinka" style="width:100%; padding:10px; background:#2a2a2a; border:1px solid #444; color:white;">
         <button id="btnLogin" class="btn-primary">Prijava</button>
     </div>
 
@@ -38,7 +38,11 @@
 </div>
 
 <script>
-    const supabase = supabase.createClient("https://fbvwvkjurcbdnbrfknig.supabase.co", "TVOJ_SUPABASE_ANON_PUBLIC_KLJUC_OVDJE");
+    // Supabase inicijalizacija sa tvojim ključevima
+    const SUPABASE_URL = "https://fbvwvkjurcbdnbrfknig.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi";
+    
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     // Auth logika
     const btnLogin = document.getElementById('btnLogin');
@@ -50,19 +54,21 @@
         if (error) alert(error.message); else location.reload();
     });
 
-    // AI Chat preko Supabase Edge Function
+    // Funkcija za AI chat (poziva Edge Function u Supabase-u)
     async function pozoviZaštićeniBackend(message) {
         try {
             const { data, error } = await supabase.functions.invoke('chat-process', {
                 body: { message, userId: (await supabase.auth.getUser()).data.user.id }
             });
-            return data?.reply || "Greška pri komunikaciji s AI.";
+            if (error) throw error;
+            return data?.reply || "Nema odgovora od AI-a.";
         } catch (e) {
-            return "Greška u konekciji.";
+            console.error(e);
+            return "Greška pri pozivu funkcije. Provjeri Edge Function!";
         }
     }
 
-    // Glasovna logika (Speech Recognition)
+    // Glasovna logika
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'bs-BA';
