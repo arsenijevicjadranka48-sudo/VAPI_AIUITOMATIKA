@@ -47,37 +47,32 @@
     const SUPABASE_URL = "https://fbvwvkjurcbdnbrfknig.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi";
     
-    // 2. Kreiraj klijenta (koristimo window.supabase)
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // 2. Kreiraj klijenta koristeći 'db' (ne 'supabase'!)
+    // Ovime sprječavamo grešku "redeclaration"
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // 3. Auth logika
+    // 3. Poveži dugmad
     const btnLogin = document.getElementById('btnLogin');
     const btnRegister = document.getElementById('btnRegister');
     
+    // Prijava
     btnLogin.addEventListener('click', async () => {
-        const { error } = await client.auth.signInWithPassword({
+        const { error } = await db.auth.signInWithPassword({
             email: document.getElementById('authEmail').value,
             password: document.getElementById('authPassword').value
         });
-        if (error) alert("Greška pri prijavi: " + error.message); 
+        if (error) alert("Greška: " + error.message); 
         else location.reload();
     });
 
+    // Registracija
     btnRegister.addEventListener('click', async () => {
-        const { error } = await client.auth.signUp({
+        const { error } = await db.auth.signUp({
             email: document.getElementById('authEmail').value,
             password: document.getElementById('authPassword').value
         });
-        if (error) alert("Greška pri registraciji: " + error.message);
+        if (error) alert("Greška: " + error.message);
         else alert("Registracija uspješna! Provjerite email.");
-    });
-
-    // 4. Provjera sesije
-    client.auth.getSession().then(({ data }) => {
-        if (data.session) {
-            document.getElementById('authPanel').style.display = 'none';
-            document.getElementById('mainPanel').style.display = 'block';
-        }
     });
 </script>
 </body>
