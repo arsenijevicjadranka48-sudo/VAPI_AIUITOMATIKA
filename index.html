@@ -87,12 +87,33 @@ button{
 
 <script>
 const SUPABASE_URL = "https://fbxwvkjurcbdnbrfknig.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi";
+const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi"; 
 
 const db = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
 );
+
+// Konfiguracija asistenta
+const assistantVoice = {
+    name: 'Google US English',
+    lang: 'en-US'
+};
+
+function speak(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voices = window.speechSynthesis.getVoices();
+        const selectedVoice = voices.find(v => v.name === assistantVoice.name) || voices[0];
+        
+        utterance.voice = selectedVoice;
+        utterance.lang = assistantVoice.lang;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        
+        window.speechSynthesis.speak(utterance);
+    }
+}
 
 const authPanel = document.getElementById("authPanel");
 const mainPanel = document.getElementById("mainPanel");
@@ -101,7 +122,6 @@ const loggedEmail = document.getElementById("loggedEmail");
 
 async function checkSession(){
     const { data:{session} } = await db.auth.getSession();
-
     if(session){
         authPanel.style.display="none";
         mainPanel.style.display="block";
@@ -115,29 +135,19 @@ async function checkSession(){
 document.getElementById("btnRegister").addEventListener("click", async ()=>{
     const email=document.getElementById("email").value.trim();
     const password=document.getElementById("password").value;
-
     const {error}=await db.auth.signUp({email,password});
-
-    if(error){
-        alert(error.message);
-        return;
-    }
-
+    if(error){ alert(error.message); return; }
     alert("Registracija uspješna. Provjerite email.");
 });
 
 document.getElementById("btnLogin").addEventListener("click", async ()=>{
     const email=document.getElementById("email").value.trim();
     const password=document.getElementById("password").value;
-
     const {error}=await db.auth.signInWithPassword({email,password});
-
-    if(error){
-        alert(error.message);
-        return;
-    }
-
+    if(error){ alert(error.message); return; }
+    
     checkSession();
+    speak("Login successful. Welcome back!"); // Ovo će sada raditi
 });
 
 document.getElementById("btnLogout").addEventListener("click", async ()=>{
@@ -157,16 +167,8 @@ document.getElementById("btnCancelPass").addEventListener("click", ()=>{
 
 document.getElementById("btnUpdatePass").addEventListener("click", async ()=>{
     const newPassword=document.getElementById("newPassword").value;
-
-    const {error}=await db.auth.updateUser({
-        password:newPassword
-    });
-
-    if(error){
-        alert(error.message);
-        return;
-    }
-
+    const {error}=await db.auth.updateUser({password:newPassword});
+    if(error){ alert(error.message); return; }
     alert("Lozinka promijenjena.");
     changePassPanel.style.display="none";
     mainPanel.style.display="block";
@@ -174,6 +176,5 @@ document.getElementById("btnUpdatePass").addEventListener("click", async ()=>{
 
 checkSession();
 </script>
-
-</body>
+    </body>
 </html>
