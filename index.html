@@ -52,6 +52,9 @@ button{
 .primary{background:#00adb5;color:white;}
 .secondary{background:#444;color:white;}
 .danger{background:#dc3545;color:white;}
+/* Stil za novo testno dugme da se jasno razlikuje */
+.accent{background:#28a745;color:white;margin-top:20px;border:1px solid #1e7e34;}
+.accent:hover{background:#218838;}
 
 #mainPanel,#changePassPanel{display:none;}
 </style>
@@ -67,6 +70,9 @@ button{
 
 <button id="btnLogin" class="primary">Prijava</button>
 <button id="btnRegister" class="secondary">Registracija</button>
+
+<!-- NOVO DUGME ZA DIREKTAN PRELAZAK BEZ LOGOVANJA -->
+<button id="btnDirectTest" class="accent">🚀 Pokreni Test Stranicu (Bez prijave)</button>
 </div>
 
 <div id="mainPanel">
@@ -115,7 +121,7 @@ function speak(text) {
     }
 }
 
-// Ostatak tvojih funkcija...
+// Elementi panela
 const authPanel = document.getElementById("authPanel");
 const mainPanel = document.getElementById("mainPanel");
 const changePassPanel = document.getElementById("changePassPanel");
@@ -132,6 +138,11 @@ async function checkSession(){
         mainPanel.style.display="none";
     }
 }
+
+// LOGIKA ZA NOVO DUGME: Preusmjeravanje direktno na fajl bez provjere sesije
+document.getElementById("btnDirectTest").addEventListener("click", () => {
+    window.location.href = "TESTANASTRAMICA.html";
+});
 
 document.getElementById("btnRegister").addEventListener("click", async ()=>{
     const email=document.getElementById("email").value.trim();
@@ -177,5 +188,5 @@ document.getElementById("btnUpdatePass").addEventListener("click", async ()=>{
 
 checkSession();
 </script>
-    </body>
+</body>
 </html>
