@@ -71,7 +71,6 @@ button{
 <button id="btnLogin" class="primary">Prijava</button>
 <button id="btnRegister" class="secondary">Registracija</button>
 
-<!-- NOVO DUGME ZA DIREKTAN PRELAZAK BEZ LOGOVANJA -->
 <button id="btnDirectTest" class="accent">🚀 Pokreni Test Stranicu (Bez prijave)</button>
 </div>
 
@@ -96,11 +95,17 @@ button{
 const { createClient } = supabase; 
 
 const SUPABASE_URL = "https://fbxwvkjurcbdnbrfknig.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZieHd2a2p1cmNiZG5icmZrbmlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNDE5NjMsImV4cCI6MjA5NTYxNzk2M30.9foma_usrsVxbZ7jp06EBigg29hhsTfByDFk2Cxlutk"; 
+const SUPABASE_ANON_KEY = "sb_publishable_ev8H-_ck4SgcNZDqdV_6iA__-Fy-Mmi"; 
 
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// POPRAVLJENO: Koristi se direktno 'createClient' kako je gore i definisano
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true
+    }
+});
 
-// Konfiguracija asistenta
+// Konfiguracija asistenta (vraćena nazad da speak() funkcija ne baca grešku)
 const assistantVoice = {
     name: 'Google US English',
     lang: 'en-US'
@@ -167,7 +172,7 @@ document.getElementById("btnLogout").addEventListener("click", async ()=>{
     checkSession();
 });
 
-document.getElementById("btnShowPass").addEventListener("click", ()=>{
+document.getElementById("btnShowPass").addEventListener("click", club=>{
     mainPanel.style.display="none";
     changePassPanel.style.display="block";
 });
