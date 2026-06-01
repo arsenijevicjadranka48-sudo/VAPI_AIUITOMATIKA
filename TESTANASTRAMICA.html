@@ -55,17 +55,22 @@
         }
         .input-group {
             display: flex;
+            flex-direction: column; /* Promijenjeno u kolonu radi ljepšeg prikaza textarea + input */
             width: 100%;
             gap: 10px;
         }
         .text-input {
-            flex: 1;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #444;
             background-color: #2a2a2a;
             color: white;
             font-size: 16px;
+            box-sizing: border-box;
+            width: 100%;
         }
         .output-box {
             padding: 15px;
@@ -98,6 +103,12 @@
         <button id="micBtn" class="btn-mic">🎙️ Pokreni Tečni Razgovor</button>
         
         <div class="input-group">
+            <textarea
+                id="systemPrompt"
+                class="text-input"
+                rows="3"
+                placeholder="Upiši AI prompt..."
+            >Ti si asistent u brzom telefonskom razgovoru uživo. Odgovori moraju biti ekstremno kratki, doslovno jedna rečenica od par riječi. Odgovaraj munjevito, bez ikakvih uvoda.</textarea>
             <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje ako nećete glasom..." autocomplete="off">
         </div>
     </div>
@@ -110,7 +121,8 @@
 
 <script>
     // --- POSTAVKE ---
-    const GROQ_API_KEY = "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"; // <--- Ovdje zalijepi svoj Groq API ključ
+    // OVDJE ZALIJEPI SVOJ NOVI API KLJUČ (Stari ti je bio vidljiv u promptu, obriši ga sa Groq-a!)
+    const GROQ_API_KEY = "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"; 
     // ----------------
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -118,19 +130,18 @@
 
     const micBtn = document.getElementById('micBtn');
     const textIn = document.getElementById('textIn');
+    const systemPrompt = document.getElementById('systemPrompt');
     const statusText = document.getElementById('status');
     const userTextField = document.getElementById('userText');
     const aiTextField = document.getElementById('aiText');
 
     let recognition;
     let isConversationActive = false; 
-    let isAiSpeaking = false; // Prati kada AI priča da ignoriše eho
+    let isAiSpeaking = false; 
 
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
         recognition.lang = 'hr-HR';
-        
-        // KLJUČNO ZA UKLANJANJE ZVUKOVA: Mikrofon radi konstantno bez gašenja
         recognition.continuous = true; 
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
@@ -143,7 +154,6 @@
         };
 
         recognition.onsoundstart = () => {
-            // Ako progovoriš dok robot brblja, odmah ga ućutkaj
             if (synth.speaking) {
                 synth.cancel();
                 isAiSpeaking = false;
@@ -154,7 +164,6 @@
         };
 
         recognition.onresult = async (event) => {
-            // Ako AI trenutno priča, ignorišemo sve što mikrofon "uhvati" sa zvučnika
             if (isAiSpeaking) return;
 
             const zadnjiRezultat = event.results[event.results.length - 1];
@@ -167,7 +176,6 @@
         };
 
         recognition.onend = () => {
-            // Ako se mikrofon ipak ugasi zbog sistemskog limita, palimo ga nazad bez tvog znanja
             if (isConversationActive) {
                 try { recognition.start(); } catch(e) {}
             }
@@ -193,6 +201,8 @@
                 statusText.innerText = "Razgovor zaustavljen.";
             }
         });
+    } else {
+        statusText.innerText = "Vaš preglednik ne podržava prepoznavanje glasa.";
     }
 
     textIn.addEventListener('keypress', (e) => { 
@@ -212,7 +222,7 @@
     }
 
     async function pozoviGroqAPI(pitanje) {
-        if (GROQ_API_KEY === "TVOJ_GROQ_API_KLJUC") return "Upišite Groq API ključ!";
+        if (!GROQ_API_KEY || GROQ_API_KEY.includes("PASTE_YOUR")) return "Upišite ispravan Groq API ključ!";
         try {
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
@@ -220,13 +230,10 @@
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
                     messages: [
-                        {
-                            role: "system",
-                            content: "Ti si asistent u brzom telefonskom razgovoru uživo. Odgovori moraju biti ekstremno kratki, doslovno jedna rečenica od par riječi. Odgovaraj munjevito, bez ikakvih uvoda."
-                        },
+                        { role: "system", content: systemPrompt.value.trim() },
                         { role: "user", content: pitanje }
                     ],
-                    temperature: 0.5, // Smanjena temperatura za brži i direktniji odgovor
+                    temperature: 0.5,
                     max_tokens: 40
                 })
             });
@@ -234,7 +241,7 @@
             const data = await response.json();
             return data.choices[0].message.content;
         } catch (error) {
-            return "Problem sa konekcijom.";
+            return "Problem sa konekcijom ili nevažeći API ključ.";
         }
     }
 
@@ -244,17 +251,17 @@
         const utterThis = new SpeechSynthesisUtterance(tekst);
         utterThis.lang = 'hr-HR';
         utterThis.pitch = 1.0;
-        utterThis.rate = 1.15; // Još brži i fluidniji govor
+        utterThis.rate = 1.15; 
 
         utterThis.onstart = () => {
-            isAiSpeaking = true; // Blokiraj mikrofon da ne sluša zvučnik
+            isAiSpeaking = true; 
             micBtn.className = 'btn-mic speaking-now';
             micBtn.innerText = "🛑 Prekini AI Govor";
             statusText.innerText = "AI govori... Slobodno upadnite u riječ.";
         };
 
         utterThis.onend = () => {
-            isAiSpeaking = false; // Odblokiraj mikrofon čim AI završi
+            isAiSpeaking = false; 
             if (isConversationActive) {
                 micBtn.className = 'btn-mic listening';
                 micBtn.innerText = "🛑 Zaustavi Razgovor";
