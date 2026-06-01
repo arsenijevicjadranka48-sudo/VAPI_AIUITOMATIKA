@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pravi AI Glasovni Razgovor (Sa Prekidanjem)</title>
+    <title>Maksimalno Brzi AI Razgovor (Bez Zvukova)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -24,10 +24,7 @@
             max-width: 500px;
             width: 100%;
         }
-        h1 {
-            color: #00adb5;
-            margin-bottom: 20px;
-        }
+        h1 { color: #00adb5; margin-bottom: 20px; }
         .controls-zone {
             display: flex;
             flex-direction: column;
@@ -44,19 +41,17 @@
             font-size: 18px;
             border-radius: 50px;
             cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
+            transition: background 0.3s;
             width: 100%;
             max-width: 280px;
             box-shadow: 0 4px 10px rgba(0, 173, 181, 0.3);
         }
-        .btn-mic:hover { background-color: #007a80; }
         .btn-mic.listening {
             background-color: #ff2e63;
             animation: pulse 1.5s infinite;
         }
         .btn-mic.speaking-now {
             background-color: #ff9f43;
-            animation: none;
         }
         .input-group {
             display: flex;
@@ -71,16 +66,6 @@
             background-color: #2a2a2a;
             color: white;
             font-size: 16px;
-        }
-        .text-input:focus { outline: none; border-color: #00adb5; }
-        .btn-send {
-            background-color: #444;
-            border: none;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
         }
         .output-box {
             padding: 15px;
@@ -106,15 +91,14 @@
 <body>
 
 <div class="container">
-    <h1>Pravi AI Razgovor 💬</h1>
-    <div id="status" class="status">Kliknite jednom za početak razgovora</div>
+    <h1>Brzi AI Razgovor ⚡</h1>
+    <div id="status" class="status">Kliknite za početak tečnog razgovora</div>
     
     <div class="controls-zone">
         <button id="micBtn" class="btn-mic">🎙️ Pokreni Tečni Razgovor</button>
         
         <div class="input-group">
-            <input type="text" id="textIn" class="text-input" placeholder="Ili upišite pitanje..." autocomplete="off">
-            <button id="sendBtn" class="btn-send">Pošalji</button>
+            <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje ako nećete glasom..." autocomplete="off">
         </div>
     </div>
     
@@ -126,14 +110,13 @@
 
 <script>
     // --- POSTAVKE ---
-    const GROQ_API_KEY = "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"; // <--- Unesi svoj Groq API ključ ovdje
+    const GROQ_API_KEY = "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"; // <--- Ovdje zalijepi svoj Groq API ključ
     // ----------------
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const synth = window.speechSynthesis;
 
     const micBtn = document.getElementById('micBtn');
-    const sendBtn = document.getElementById('sendBtn');
     const textIn = document.getElementById('textIn');
     const statusText = document.getElementById('status');
     const userTextField = document.getElementById('userText');
@@ -141,73 +124,68 @@
 
     let recognition;
     let isConversationActive = false; 
-    let ignoreNextEnd = false;
+    let isAiSpeaking = false; // Prati kada AI priča da ignoriše eho
 
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
         recognition.lang = 'hr-HR';
+        
+        // KLJUČNO ZA UKLANJANJE ZVUKOVA: Mikrofon radi konstantno bez gašenja
+        recognition.continuous = true; 
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
         recognition.onstart = () => {
+            isConversationActive = true;
             micBtn.className = 'btn-mic listening';
             micBtn.innerText = "🛑 Zaustavi Razgovor";
-            statusText.innerText = "Slušam vas... Govorite slobodno.";
+            statusText.innerText = "Slušam vas... Pričajte slobodno.";
         };
 
-        // AKO PROGOVORIŠ DOK AI PRIČA -> ODMAH GA PREKINI!
         recognition.onsoundstart = () => {
+            // Ako progovoriš dok robot brblja, odmah ga ućutkaj
             if (synth.speaking) {
-                console.log("Korisnik je upao u riječ. Prekidam AI govornika.");
-                synth.cancel(); 
-                statusText.innerText = "Prekinuli ste AI. Slušam vas...";
-            }
-        };
-
-        recognition.onerror = (event) => {
-            if (event.error !== 'no-speech') {
-                statusText.innerText = "Greška: " + event.error;
+                synth.cancel();
+                isAiSpeaking = false;
+                micBtn.className = 'btn-mic listening';
+                micBtn.innerText = "🛑 Zaustavi Razgovor";
+                statusText.innerText = "Slušam vas... Prekinuli ste me.";
             }
         };
 
         recognition.onresult = async (event) => {
-            const speechToText = event.results[event.results.length - 1][0].transcript;
+            // Ako AI trenutno priča, ignorišemo sve što mikrofon "uhvati" sa zvučnika
+            if (isAiSpeaking) return;
+
+            const zadnjiRezultat = event.results[event.results.length - 1];
+            const speechToText = zadnjiRezultat[0].transcript.trim();
             
-            ignoreNextEnd = true;
-            recognition.stop(); 
-            
-            statusText.innerText = "AI razmišlja...";
-            await obradiPitanje(speechToText);
+            if (speechToText === "") return;
+
+            statusText.innerText = "Šaljem (Munjevito)...";
+            obradiPitanje(speechToText);
         };
 
         recognition.onend = () => {
-            if (ignoreNextEnd) {
-                ignoreNextEnd = false;
-                return;
-            }
-            if (isConversationActive && !synth.speaking) {
+            // Ako se mikrofon ipak ugasi zbog sistemskog limita, palimo ga nazad bez tvog znanja
+            if (isConversationActive) {
                 try { recognition.start(); } catch(e) {}
             }
         };
 
-        // Dugme sada ima tri stanja: Pokreni, Zaustavi skroz, ili Ućutkaj AI ako trenutno priča
         micBtn.addEventListener('click', () => {
             if (synth.speaking) {
-                // Ako AI priča, ovo dugme ga samo ućutkuje i vraća na slušanje
                 synth.cancel();
+                isAiSpeaking = false;
                 micBtn.className = 'btn-mic listening';
-                micBtn.innerText = "🛑 Zaustavi Razgovor";
-                statusText.innerText = "Ućutkali ste AI. Slušam vas...";
-                try { recognition.start(); } catch(e) {}
+                statusText.innerText = "Ućutkan. Slušam vas...";
                 return;
             }
 
             if (!isConversationActive) {
-                isConversationActive = true;
                 try { recognition.start(); } catch(e) {}
             } else {
                 isConversationActive = false;
-                ignoreNextEnd = true;
                 recognition.stop();
                 if (synth.speaking) synth.cancel();
                 micBtn.className = 'btn-mic';
@@ -217,19 +195,14 @@
         });
     }
 
-    sendBtn.addEventListener('click', () => izvrsiSlanjeTeksta());
-    textIn.addEventListener('keypress', (e) => { if (e.key === 'Enter') izvrsiSlanjeTeksta(); });
-
-    function izvrsiSlanjeTeksta() {
-        const tekst = textIn.value.trim();
-        if (tekst !== "") {
+    textIn.addEventListener('keypress', (e) => { 
+        if (e.key === 'Enter' && textIn.value.trim() !== "") {
             if (synth.speaking) synth.cancel();
-            if (isConversationActive) { isConversationActive = false; recognition.stop(); }
-            statusText.innerText = "AI razmišlja...";
-            obradiPitanje(tekst);
+            statusText.innerText = "Šaljem...";
+            obradiPitanje(textIn.value.trim());
             textIn.value = "";
         }
-    }
+    });
 
     async function obradiPitanje(pitanje) {
         userTextField.innerText = pitanje;
@@ -249,12 +222,12 @@
                     messages: [
                         {
                             role: "system",
-                            content: "Ti si asistent u živom glasovnom razgovoru. Odgovaraj ULTRA KRATKO (maksimalno 1 rečenica od par riječi). Odgovori moraju biti direktni i brzi da ne zamaraš sagovornika dugim govorom."
+                            content: "Ti si asistent u brzom telefonskom razgovoru uživo. Odgovori moraju biti ekstremno kratki, doslovno jedna rečenica od par riječi. Odgovaraj munjevito, bez ikakvih uvoda."
                         },
                         { role: "user", content: pitanje }
                     ],
-                    temperature: 0.6,
-                    max_tokens: 60
+                    temperature: 0.5, // Smanjena temperatura za brži i direktniji odgovor
+                    max_tokens: 40
                 })
             });
             if (!response.ok) throw new Error();
@@ -271,25 +244,21 @@
         const utterThis = new SpeechSynthesisUtterance(tekst);
         utterThis.lang = 'hr-HR';
         utterThis.pitch = 1.0;
-        utterThis.rate = 1.1; // Još malo ubrzano radi dinamičnijeg prekidanja
+        utterThis.rate = 1.15; // Još brži i fluidniji govor
 
-        // Kada AI počne pričati, mijenjamo izgled glavnog dugmeta u "Prekini AI"
         utterThis.onstart = () => {
+            isAiSpeaking = true; // Blokiraj mikrofon da ne sluša zvučnik
             micBtn.className = 'btn-mic speaking-now';
             micBtn.innerText = "🛑 Prekini AI Govor";
-            statusText.innerText = "AI priča... Slobodno ga prekinite glasom ili klikom.";
+            statusText.innerText = "AI govori... Slobodno upadnite u riječ.";
         };
 
         utterThis.onend = () => {
+            isAiSpeaking = false; // Odblokiraj mikrofon čim AI završi
             if (isConversationActive) {
                 micBtn.className = 'btn-mic listening';
                 micBtn.innerText = "🛑 Zaustavi Razgovor";
-                statusText.innerText = "Slušam vas... Govorite slobodno.";
-                try { recognition.start(); } catch(e) {}
-            } else {
-                micBtn.className = 'btn-mic';
-                micBtn.innerText = "🎙️ Pokreni Tečni Razgovor";
-                statusText.innerText = "Kliknite za početak razgovora";
+                statusText.innerText = "Slušam vas... Govorite.";
             }
         };
 
