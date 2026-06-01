@@ -221,11 +221,14 @@ document.getElementById("btnCancelPass").addEventListener("click", () => {
     mainPanel.style.display = "block";
 });
 
-// Dugme za direktni test (Bez prijave) - simulira ulazak
+// Dugme za direktni test (Bez prijave) - Otvara drugu stranicu
 document.getElementById("btnDirectTest").addEventListener("click", () => {
     authPanel.style.display = "none";
     mainPanel.style.display = "block";
-    loggedEmailText.textContent = "Pokrenuto u testnom režimu (Gost)";
+    loggedEmailText.textContent = "Preusmjeravanje...";
+    
+    // OVDJE upiši tačan naziv fajla u kojem se nalazi tvoj AI Razgovor
+    window.location.href = "ai-test.html"; 
 });
 
 // Pokretanje inicijalne provjere sesije pri učitavanju stranice
