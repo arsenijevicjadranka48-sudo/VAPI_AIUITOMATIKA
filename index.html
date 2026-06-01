@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+YPE html>
 <html lang="bs">
 <head>
 <meta charset="UTF-8">
@@ -88,16 +88,13 @@ button{
 </div>
 
 <script>
-// POSTAVKA: URL sa Google Apps Script-a
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE4FRHSfPHSIXewTtjUFEG1ip2NHR7FEQ7idUfkvrB5HeQlHv668UG_B8VIV1DPrbP/exec";
 
-// Selektori panela
 const authPanel = document.getElementById("authPanel");
 const mainPanel = document.getElementById("mainPanel");
 const changePassPanel = document.getElementById("changePassPanel");
 const loggedEmailText = document.getElementById("loggedEmail");
 
-// Pomoćna funkcija za Text-to-Speech (glasovna potvrda)
 function speak(text) {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
@@ -106,7 +103,6 @@ function speak(text) {
     }
 }
 
-// Funkcija za provjeru i upravljanje sesijom (prikaz panela)
 function checkSession() {
     const user = localStorage.getItem("loggedUser");
     if (user) {
@@ -126,9 +122,7 @@ function checkSession() {
 document.getElementById("btnRegister").addEventListener("click", async () => {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-    
     if (!email || !password) { alert("Unesite email i lozinku za registraciju!"); return; }
-
     try {
         const response = await fetch(SCRIPT_URL, {
             method: "POST",
@@ -136,54 +130,36 @@ document.getElementById("btnRegister").addEventListener("click", async () => {
             body: JSON.stringify({ action: "register", email, password })
         });
         const result = await response.json();
-        
-        if (result.status === "success") {
-            alert("Registracija uspješna! Sada se možete prijaviti.");
-        } else {
-            alert(result.message || "Greška pri registraciji.");
-        }
-    } catch (error) {
-        alert("Greška: " + error.message);
-    }
+        if (result.status === "success") { alert("Registracija uspješna! Sada se možete prijaviti."); } 
+        else { alert(result.message || "Greška pri registraciji."); }
+    } catch (error) { alert("Greška: " + error.message); }
 });
 
-// PRIJAVA (LOGIN)
+// PRIJAVA
 document.getElementById("btnLogin").addEventListener("click", async () => {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-    
     if (!email || !password) { alert("Unesite email i lozinku!"); return; }
-
     try {
         const response = await fetch(SCRIPT_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({ action: "login", email, password })
         });
-        
         const result = await response.json();
-        
         if (result.status === "success") {
             localStorage.setItem("loggedUser", result.email || email);
             checkSession();
             speak("Login successful. Welcome back!");
-        } else {
-            alert(result.message || "Pogrešan email ili lozinka!");
-        }
-    } catch (error) {
-        alert("Došlo je do greške pri provjeri. Provjerite tabelu ili Web App postavke.");
-        console.error(error);
-    }
+        } else { alert(result.message || "Pogrešan email ili lozinka!"); }
+    } catch (error) { alert("Došlo je do greške pri provjeri."); }
 });
 
 // PROMJENA LOZINKE
 document.getElementById("btnUpdatePass").addEventListener("click", async () => {
     const newPassword = document.getElementById("newPassword").value;
     const email = localStorage.getItem("loggedUser");
-
-    if (!newPassword) { alert("Unesite novu lozinku!"); return; }
-    if (!email) { alert("Niste prijavljeni!"); return; }
-
+    if (!newPassword || !email) { alert("Greška sa podacima!"); return; }
     try {
         const response = await fetch(SCRIPT_URL, {
             method: "POST",
@@ -191,17 +167,12 @@ document.getElementById("btnUpdatePass").addEventListener("click", async () => {
             body: JSON.stringify({ action: "updatePassword", email, password: newPassword })
         });
         const result = await response.json();
-        
         if (result.status === "success") {
             alert("Lozinka uspješno promijenjena.");
             changePassPanel.style.display = "none";
             mainPanel.style.display = "block";
-        } else {
-            alert(result.message || "Neuspješna promjena lozinke.");
-        }
-    } catch (error) {
-        alert("Greška prilikom izmjene lozinke.");
-    }
+        } else { alert(result.message || "Neuspješna promjena lozinke."); }
+    } catch (error) { alert("Greška prilikom izmjene lozinke."); }
 });
 
 // ODJAVA
@@ -210,7 +181,7 @@ document.getElementById("btnLogout").addEventListener("click", () => {
     checkSession();
 });
 
-// NAVIGACIJA IZMEĐU PANELA
+// NAVIGACIJA
 document.getElementById("btnShowPass").addEventListener("click", () => {
     mainPanel.style.display = "none";
     changePassPanel.style.display = "block";
@@ -221,17 +192,14 @@ document.getElementById("btnCancelPass").addEventListener("click", () => {
     mainPanel.style.display = "block";
 });
 
-// Dugme za direktni test (Bez prijave) - Otvara drugu stranicu
+// POPRAVLJENO DUGME ZA TEST STRANICU
 document.getElementById("btnDirectTest").addEventListener("click", () => {
-    authPanel.style.display = "none";
-    mainPanel.style.display = "block";
-    loggedEmailText.textContent = "Preusmjeravanje...";
+    console.log("Dugme je kliknuto, pokrećem preusmjeravanje...");
     
-    // OVDJE upiši tačan naziv fajla u kojem se nalazi tvoj AI Razgovor
-    window.location.href = "ai-test.html"; 
+    // Provjera da li se fajl tačno ovako zove (PAZI NA VELIKA SLOVA)
+    window.location.href = "TESTANASTRAMICA.html"; 
 });
 
-// Pokretanje inicijalne provjere sesije pri učitavanju stranice
 checkSession();
 </script>
 </body>
