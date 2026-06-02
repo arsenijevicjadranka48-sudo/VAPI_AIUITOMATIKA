@@ -3,154 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maksimalno Brzi AI Razgovor (Profesionalni Asistent)</title>
+    <title>AI Poslovni Asistent - Kompletna verzija</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            text-align: center;
-            background-color: #1e1e1e;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            max-width: 500px;
-            width: 100%;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { text-align: center; background-color: #1e1e1e; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); max-width: 600px; width: 100%; }
         h1 { color: #00adb5; margin-bottom: 20px; }
-        .controls-zone {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .btn-mic {
-            background-color: #00adb5;
-            border: none;
-            color: white;
-            font-weight: bold;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: background 0.3s;
-            width: 100%;
-            max-width: 280px;
-            box-shadow: 0 4px 10px rgba(0, 173, 181, 0.3);
-        }
-        .btn-mic.listening {
-            background-color: #ff2e63;
-            animation: pulse 1.5s infinite;
-        }
-        .btn-mic.speaking-now {
-            background-color: #ff9f43;
-        }
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            gap: 10px;
-        }
-        .text-input {
-            resize: vertical;
-            min-height: 100px;
-            font-family: inherit;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background-color: #2a2a2a;
-            color: white;
-            font-size: 14px;
-            box-sizing: border-box;
-            width: 100%;
-        }
-        .output-box {
-            padding: 15px;
-            background-color: #2a2a2a;
-            border-radius: 8px;
-            min-height: 80px;
-            text-align: left;
-            color: #cccccc;
-        }
-        .status {
-            font-size: 15px;
-            color: #00adb5;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 46, 99, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(255, 46, 99, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 46, 99, 0); }
-        }
+        .controls-zone { display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 20px; }
+        .btn-mic { background-color: #00adb5; border: none; color: white; font-weight: bold; padding: 15px 30px; font-size: 18px; border-radius: 50px; cursor: pointer; width: 100%; max-width: 280px; }
+        .btn-mic.listening { background-color: #ff2e63; }
+        .text-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background-color: #2a2a2a; color: white; font-size: 14px; box-sizing: border-box; }
+        .output-box { padding: 15px; background-color: #2a2a2a; border-radius: 8px; min-height: 80px; text-align: left; color: #cccccc; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>AI Poslovni Asistent ⚡</h1>
-    <div id="status" class="status">Kliknite za početak</div>
     
     <div class="controls-zone">
         <button id="micBtn" class="btn-mic">🎙️ Pokreni Razgovor</button>
         
-        <div class="input-group">
-            <textarea id="systemPrompt" class="text-input">Ti si profesionalni AI poslovni asistent. Tvoj cilj je proaktivno nuditi rješenja. Dok "razmišljaš" (prije odgovora), ubaci prirodne uzrečice poput: "Razumijem, trenutak da sagledam sve opcije...", "Jasno, analiziram najbolji put za ovo...", ili "Samo trenutak, obrađujem taj podatak...". Nakon uzrečice, daj kratku i konkretnu ponudu rješenja za korisnikov problem.</textarea>
-            <input type="text" id="textIn" class="text-input" style="min-height: 40px;" placeholder="Upišite pitanje..." autocomplete="off">
-        </div>
+        <textarea id="systemPrompt" class="text-input" rows="10">Ti si profesionalni, ali pristupačan AI asistent specijaliziran za automatizaciju poslovanja. 
+
+Ograničenja:
+1. Nikada ne zvuči robotski.
+2. Zadrži fokus na pretvaranju razgovora u konkretan poslovni angažman.
+
+Stil komunikacije:
+Dok analiziraš upit, ubaci uzrečice: "Razumijem, trenutak da sagledam sve opcije...", "Samo trenutak, obrađujem taj podatak...", ili "Jasno, analiziram najbolji put za ovo...".
+
+Struktura ponude:
+Svaka tvoja ponuda mora sadržavati:
+- Problem: Kratko definisanje izazova.
+- Rješenje: Kako AI automatizacija rješava problem.
+- Benefit: Šta klijent konkretno dobija.
+- Poziv na akciju (Call to Action).</textarea>
+        
+        <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje..." autocomplete="off">
     </div>
     
     <div class="output-box">
-        <p><strong>AI:</strong> <span id="aiText">...</span></p>
+        <strong>AI odgovor:</strong>
+        <p id="aiText">...</p>
     </div>
 </div>
 
 <script>
     const GROQ_API_KEY = "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"; 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const synth = window.speechSynthesis;
-    const micBtn = document.getElementById('micBtn');
-    const textIn = document.getElementById('textIn');
     const systemPrompt = document.getElementById('systemPrompt');
-    const statusText = document.getElementById('status');
+    const textIn = document.getElementById('textIn');
     const aiTextField = document.getElementById('aiText');
-
-    let recognition, isConversationActive = false, isAiSpeaking = false;
-
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'hr-HR';
-        recognition.continuous = true;
-        recognition.onresult = async (e) => {
-            const text = e.results[e.results.length - 1][0].transcript;
-            statusText.innerText = "Analiziram...";
-            const response = await pozoviGroqAPI(text);
-            aiTextField.innerText = response;
-            izgovori(response);
-        };
-        micBtn.onclick = () => {
-            if(!isConversationActive) { recognition.start(); isConversationActive = true; micBtn.innerText = "🛑 STOP"; }
-            else { recognition.stop(); isConversationActive = false; micBtn.innerText = "🎙️ Pokreni Razgovor"; }
-        };
-    }
-
-    textIn.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            const val = textIn.value;
-            textIn.value = "";
-            const response = await pozoviGroqAPI(val);
-            aiTextField.innerText = response;
-            izgovori(response);
-        }
-    });
 
     async function pozoviGroqAPI(pitanje) {
         try {
@@ -167,14 +70,15 @@
         } catch(e) { return "Greška u konekciji."; }
     }
 
-    function izgovori(tekst) {
-        synth.cancel();
-        const utter = new SpeechSynthesisUtterance(tekst);
-        utter.lang = 'hr-HR';
-        utter.rate = 1.1;
-        synth.speak(utter);
-        statusText.innerText = "Spreman.";
-    }
+    textIn.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            const response = await pozoviGroqAPI(textIn.value);
+            aiTextField.innerText = response;
+            const utter = new SpeechSynthesisUtterance(response);
+            utter.lang = 'hr-HR';
+            synth.speak(utter);
+        }
+    });
 </script>
 
 </body>
