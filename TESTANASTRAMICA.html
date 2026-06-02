@@ -2,169 +2,102 @@
 <html lang="bs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Poslovni Asistent - Konačna verzija</title>
-
+    <title>AI Poslovni Asistent - Kompletni Sistem</title>
     <style>
-        /* Glavni stilovi za stranicu */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #121212; 
-            color: #ffffff; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-        }
-
-        .container { 
-            text-align: center; 
-            background-color: #1e1e1e; 
-            padding: 30px; 
-            border-radius: 15px; 
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
-            max-width: 600px; 
-            width: 100%; 
-        }
-
-        h1 { color: #00adb5; margin-bottom: 20px; }
-
-        .controls-zone { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            align-items: center; 
-            margin-bottom: 20px; 
-        }
-
-        .btn-mic { 
-            background-color: #00adb5; 
-            border: none; 
-            color: white; 
-            font-weight: bold; 
-            padding: 15px 30px; 
-            font-size: 18px; 
-            border-radius: 50px; 
-            cursor: pointer; 
-            width: 100%; 
-            max-width: 280px; 
-        }
-
-        .btn-mic.listening { background-color: #ff2e63; }
-
-        .text-input { 
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid #444; 
-            background-color: #2a2a2a; 
-            color: white; 
-            font-size: 14px; 
-            box-sizing: border-box; 
-        }
-
-        .output-box { 
-            padding: 15px; 
-            background-color: #2a2a2a; 
-            border-radius: 8px; 
-            min-height: 80px; 
-            text-align: left; 
-            color: #cccccc; 
-            margin-top: 15px; 
-        }
+        body { font-family: sans-serif; background-color: #121212; color: #fff; display: flex; justify-content: center; padding: 20px; }
+        .container { background-color: #1e1e1e; padding: 25px; border-radius: 15px; width: 100%; max-width: 600px; }
+        .text-input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #444; background: #2a2a2a; color: #fff; box-sizing: border-box; }
+        .btn { padding: 12px; margin-top: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; width: 100%; }
+        .btn-send { background: #00adb5; }
+        .btn-save { background: #e74c3c; }
+        .output-box { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 50px; }
     </style>
 </head>
-
 <body>
 
-    <div class="container">
-        <h1>AI Poslovni Asistent ⚡</h1>
-        
-        <div class="controls-zone">
-            <button id="micBtn" class="btn-mic">🎙️ Pokreni Razgovor</button>
-            
-            <textarea id="systemPrompt" class="text-input" rows="12">
-Ti si profesionalni AI poslovni asistent.
-
+<div class="container">
+    <h1>AI Poslovni Asistent ⚡</h1>
+    <input type="text" id="userName" class="text-input" placeholder="Ime klijenta (za naziv fajla)...">
+    
+    <textarea id="systemPrompt" class="text-input" rows="8">Ti si profesionalni AI poslovni asistent. 
 Ograničenja:
-1. Nikada ne zvuči robotski.
-2. Dužina svakog odgovora mora biti maksimalno 3 do 4 kratke rečenice.
-3. Zadrži fokus na pretvaranju razgovora u konkretan poslovni angažman.
-
-Stil komunikacije:
-Analiziraj složenost upita. Ako je pitanje složeno i zahtijeva dublju obradu, započni odgovor s jednom od uzrečica: "Razumijem, trenutak da sagledam sve opcije...", "Samo trenutak, obrađujem taj podatak..." ili "Jasno, analiziram najbolji put za ovo...". Ako je pitanje jednostavno, odgovori direktno bez uzrečica.
-
-Struktura ponude:
-- Problem: Kratko definisanje izazova.
-- Rješenje: Kako AI automatizacija rješava problem.
-- Benefit: Šta klijent dobija.
-- Poziv na akciju.
-            </textarea>
-            
-            <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje..." autocomplete="off">
-        </div>
-        
-        <div class="output-box">
-            <strong>AI odgovor:</strong>
-            <p id="aiText">...</p>
-        </div>
+1. Odgovori su strogo 3 do 4 rečenice.
+2. Fokusiraj se na poslovni angažman.
+Stil: Ako je pitanje kompleksno, koristi uzrečicu: "Razumijem, trenutak da sagledam sve opcije...". Ako je jednostavno, odgovori direktno.</textarea>
+    
+    <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje i pritisnite Enter..." autocomplete="off">
+    
+    <div class="output-box">
+        <strong>AI:</strong> <p id="aiText">...</p>
     </div>
 
-<script>
-    const GROQ_API_KEY = "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"; 
-    const synth = window.speechSynthesis;
-    const systemPrompt = document.getElementById('systemPrompt');
-    const textIn = document.getElementById('textIn');
-    const aiTextField = document.getElementById('aiText');
+    <button onclick="zavrsiIizbrisi()" class="btn btn-save">💾 Završi i izbriši</button>
+</div>
 
-    // 1. OVO TI JE FALILO: Definisanje niza za pamćenje istorije
-    let chatHistory = [];
+<script>
+    const GROQ_API_KEY = "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";
+    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    let audioChunks = [];
+    let mediaRecorder;
+
+    // Pokreni snimanje glasa
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.start();
+    });
 
     async function pozoviGroqAPI(pitanje) {
-        // Dodaj korisnikovu poruku u historiju
         chatHistory.push({ role: "user", content: pitanje });
-
         try {
             const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${GROQ_API_KEY}`, 
-                    "Content-Type": "application/json" 
-                },
+                headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    // 2. OVO KORISTI: Sistemski prompt + sva historija
-                    messages: [
-                        { role: "system", content: systemPrompt.value }, 
-                        ...chatHistory
-                    ]
+                    messages: [{ role: "system", content: document.getElementById('systemPrompt').value }, ...chatHistory]
                 })
             });
-            
             const data = await res.json();
             const aiResponse = data.choices[0].message.content;
-
-            // Dodaj AI odgovor u historiju da ga pamti za idući put
             chatHistory.push({ role: "assistant", content: aiResponse });
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             return aiResponse;
-            
-        } catch(e) { 
-            return "Greška u konekciji sa API-jem."; 
-        }
+        } catch(e) { return "Greška u konekciji."; }
     }
 
-    textIn.addEventListener('keypress', async (e) => {
+    document.getElementById('textIn').addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
-            const response = await pozoviGroqAPI(textIn.value);
-            aiTextField.innerText = response;
-            
-            const utter = new SpeechSynthesisUtterance(response);
-            utter.lang = 'hr-HR';
-            synth.speak(utter);
-            textIn.value = ""; // Opcionalno: briše tekst nakon slanja
+            const val = document.getElementById('textIn').value;
+            const res = await pozoviGroqAPI(val);
+            document.getElementById('aiText').innerText = res;
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(res));
+            document.getElementById('textIn').value = "";
         }
     });
+
+    function zavrsiIizbrisi() {
+        let ime = document.getElementById('userName').value.trim() || "nepoznati_klijent";
+        
+        // Tekstualni fajl
+        const text = chatHistory.map(i => `${i.role.toUpperCase()}: ${i.content}`).join('\n\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+        a.download = `Razgovor_${ime}.txt`;
+        a.click();
+
+        // Audio fajl
+        mediaRecorder.stop();
+        mediaRecorder.onstop = () => {
+            const aAudio = document.createElement('a');
+            aAudio.href = URL.createObjectURL(new Blob(audioChunks, { type: 'audio/webm' }));
+            aAudio.download = `Glas_${ime}.webm`;
+            aAudio.click();
+            localStorage.removeItem('chatHistory');
+            location.reload();
+        };
+    }
 </script>
-    </body>
+
+</body>
 </html>
