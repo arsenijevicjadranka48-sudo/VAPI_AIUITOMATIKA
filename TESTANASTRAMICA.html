@@ -111,48 +111,60 @@ Struktura ponude:
         </div>
     </div>
 
-    <script>
-        const GROQ_API_KEY = "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"; 
-        const synth = window.speechSynthesis;
-        const systemPrompt = document.getElementById('systemPrompt');
-        const textIn = document.getElementById('textIn');
-        const aiTextField = document.getElementById('aiText');
+<script>
+    const GROQ_API_KEY = "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"; 
+    const synth = window.speechSynthesis;
+    const systemPrompt = document.getElementById('systemPrompt');
+    const textIn = document.getElementById('textIn');
+    const aiTextField = document.getElementById('aiText');
 
-        async function pozoviGroqAPI(pitanje) {
-            try {
-                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { 
-                        "Authorization": `Bearer ${GROQ_API_KEY}`, 
-                        "Content-Type": "application/json" 
-                    },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
-                        messages: [
-                            { role: "system", content: systemPrompt.value }, 
-                            { role: "user", content: pitanje }
-                        ]
-                    })
-                });
-                
-                const data = await res.json();
-                return data.choices[0].message.content;
-                
-            } catch(e) { 
-                return "Greška u konekciji sa API-jem."; 
-            }
+    // 1. OVO TI JE FALILO: Definisanje niza za pamćenje istorije
+    let chatHistory = [];
+
+    async function pozoviGroqAPI(pitanje) {
+        // Dodaj korisnikovu poruku u historiju
+        chatHistory.push({ role: "user", content: pitanje });
+
+        try {
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${GROQ_API_KEY}`, 
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    // 2. OVO KORISTI: Sistemski prompt + sva historija
+                    messages: [
+                        { role: "system", content: systemPrompt.value }, 
+                        ...chatHistory
+                    ]
+                })
+            });
+            
+            const data = await res.json();
+            const aiResponse = data.choices[0].message.content;
+
+            // Dodaj AI odgovor u historiju da ga pamti za idući put
+            chatHistory.push({ role: "assistant", content: aiResponse });
+            return aiResponse;
+            
+        } catch(e) { 
+            return "Greška u konekciji sa API-jem."; 
         }
+    }
 
-        textIn.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const response = await pozoviGroqAPI(textIn.value);
-                aiTextField.innerText = response;
-                
-                const utter = new SpeechSynthesisUtterance(response);
-                utter.lang = 'hr-HR';
-                synth.speak(utter);
-            }
-        });
-    </script>
-</body>
+    textIn.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            const response = await pozoviGroqAPI(textIn.value);
+            aiTextField.innerText = response;
+            
+            const utter = new SpeechSynthesisUtterance(response);
+            utter.lang = 'hr-HR';
+            synth.speak(utter);
+            textIn.value = ""; // Opcionalno: briše tekst nakon slanja
+        }
+    });
+</script>
+    </body>
 </html>
