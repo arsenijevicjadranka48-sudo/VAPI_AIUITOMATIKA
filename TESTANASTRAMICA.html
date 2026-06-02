@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maksimalno Brzi AI Razgovor (Bez Zvukova)</title>
+    <title>Maksimalno Brzi AI Razgovor (Profesionalni Asistent)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -55,20 +55,20 @@
         }
         .input-group {
             display: flex;
-            flex-direction: column; /* Promijenjeno u kolonu radi ljepšeg prikaza textarea + input */
+            flex-direction: column;
             width: 100%;
             gap: 10px;
         }
         .text-input {
             resize: vertical;
-            min-height: 60px;
+            min-height: 100px;
             font-family: inherit;
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #444;
             background-color: #2a2a2a;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             box-sizing: border-box;
             width: 100%;
         }
@@ -96,180 +96,84 @@
 <body>
 
 <div class="container">
-    <h1>Brzi AI Razgovor ⚡</h1>
-    <div id="status" class="status">Kliknite za početak tečnog razgovora</div>
+    <h1>AI Poslovni Asistent ⚡</h1>
+    <div id="status" class="status">Kliknite za početak</div>
     
     <div class="controls-zone">
-        <button id="micBtn" class="btn-mic">🎙️ Pokreni Tečni Razgovor</button>
+        <button id="micBtn" class="btn-mic">🎙️ Pokreni Razgovor</button>
         
         <div class="input-group">
-            <textarea
-                id="systemPrompt"
-                class="text-input"
-                rows="3"
-                placeholder="Upiši AI prompt..."
-            >Ti si asistent u brzom telefonskom razgovoru uživo. Odgovori moraju biti ekstremno kratki, doslovno jedna rečenica od par riječi. Odgovaraj munjevito, bez ikakvih uvoda.</textarea>
-            <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje ako nećete glasom..." autocomplete="off">
+            <textarea id="systemPrompt" class="text-input">Ti si profesionalni AI poslovni asistent. Tvoj cilj je proaktivno nuditi rješenja. Dok "razmišljaš" (prije odgovora), ubaci prirodne uzrečice poput: "Razumijem, trenutak da sagledam sve opcije...", "Jasno, analiziram najbolji put za ovo...", ili "Samo trenutak, obrađujem taj podatak...". Nakon uzrečice, daj kratku i konkretnu ponudu rješenja za korisnikov problem.</textarea>
+            <input type="text" id="textIn" class="text-input" style="min-height: 40px;" placeholder="Upišite pitanje..." autocomplete="off">
         </div>
     </div>
     
     <div class="output-box">
-        <p><strong>Vi:</strong> <span id="userText">...</span></p>
-        <p><strong>Groq AI:</strong> <span id="aiText">...</span></p>
+        <p><strong>AI:</strong> <span id="aiText">...</span></p>
     </div>
 </div>
 
 <script>
-    // --- POSTAVKE ---
-    // OVDJE ZALIJEPI SVOJ NOVI API KLJUČ (Stari ti je bio vidljiv u promptu, obriši ga sa Groq-a!)
     const GROQ_API_KEY = "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"; 
-    // ----------------
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const synth = window.speechSynthesis;
-
     const micBtn = document.getElementById('micBtn');
     const textIn = document.getElementById('textIn');
     const systemPrompt = document.getElementById('systemPrompt');
     const statusText = document.getElementById('status');
-    const userTextField = document.getElementById('userText');
     const aiTextField = document.getElementById('aiText');
 
-    let recognition;
-    let isConversationActive = false; 
-    let isAiSpeaking = false; 
+    let recognition, isConversationActive = false, isAiSpeaking = false;
 
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
         recognition.lang = 'hr-HR';
-        recognition.continuous = true; 
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        recognition.onstart = () => {
-            isConversationActive = true;
-            micBtn.className = 'btn-mic listening';
-            micBtn.innerText = "🛑 Zaustavi Razgovor";
-            statusText.innerText = "Slušam vas... Pričajte slobodno.";
+        recognition.continuous = true;
+        recognition.onresult = async (e) => {
+            const text = e.results[e.results.length - 1][0].transcript;
+            statusText.innerText = "Analiziram...";
+            const response = await pozoviGroqAPI(text);
+            aiTextField.innerText = response;
+            izgovori(response);
         };
-
-        recognition.onsoundstart = () => {
-            if (synth.speaking) {
-                synth.cancel();
-                isAiSpeaking = false;
-                micBtn.className = 'btn-mic listening';
-                micBtn.innerText = "🛑 Zaustavi Razgovor";
-                statusText.innerText = "Slušam vas... Prekinuli ste me.";
-            }
+        micBtn.onclick = () => {
+            if(!isConversationActive) { recognition.start(); isConversationActive = true; micBtn.innerText = "🛑 STOP"; }
+            else { recognition.stop(); isConversationActive = false; micBtn.innerText = "🎙️ Pokreni Razgovor"; }
         };
-
-        recognition.onresult = async (event) => {
-            if (isAiSpeaking) return;
-
-            const zadnjiRezultat = event.results[event.results.length - 1];
-            const speechToText = zadnjiRezultat[0].transcript.trim();
-            
-            if (speechToText === "") return;
-
-            statusText.innerText = "Šaljem (Munjevito)...";
-            obradiPitanje(speechToText);
-        };
-
-        recognition.onend = () => {
-            if (isConversationActive) {
-                try { recognition.start(); } catch(e) {}
-            }
-        };
-
-        micBtn.addEventListener('click', () => {
-            if (synth.speaking) {
-                synth.cancel();
-                isAiSpeaking = false;
-                micBtn.className = 'btn-mic listening';
-                statusText.innerText = "Ućutkan. Slušam vas...";
-                return;
-            }
-
-            if (!isConversationActive) {
-                try { recognition.start(); } catch(e) {}
-            } else {
-                isConversationActive = false;
-                recognition.stop();
-                if (synth.speaking) synth.cancel();
-                micBtn.className = 'btn-mic';
-                micBtn.innerText = "🎙️ Pokreni Tečni Razgovor";
-                statusText.innerText = "Razgovor zaustavljen.";
-            }
-        });
-    } else {
-        statusText.innerText = "Vaš preglednik ne podržava prepoznavanje glasa.";
     }
 
-    textIn.addEventListener('keypress', (e) => { 
-        if (e.key === 'Enter' && textIn.value.trim() !== "") {
-            if (synth.speaking) synth.cancel();
-            statusText.innerText = "Šaljem...";
-            obradiPitanje(textIn.value.trim());
+    textIn.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            const val = textIn.value;
             textIn.value = "";
+            const response = await pozoviGroqAPI(val);
+            aiTextField.innerText = response;
+            izgovori(response);
         }
     });
 
-    async function obradiPitanje(pitanje) {
-        userTextField.innerText = pitanje;
-        const aiResponse = await pozoviGroqAPI(pitanje);
-        aiTextField.innerText = aiResponse;
-        izgovori(aiResponse);
-    }
-
     async function pozoviGroqAPI(pitanje) {
-        if (!GROQ_API_KEY || GROQ_API_KEY.includes("PASTE_YOUR")) return "Upišite ispravan Groq API ključ!";
         try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    messages: [
-                        { role: "system", content: systemPrompt.value.trim() },
-                        { role: "user", content: pitanje }
-                    ],
-                    temperature: 0.5,
-                    max_tokens: 1500
+                    messages: [{ role: "system", content: systemPrompt.value }, { role: "user", content: pitanje }]
                 })
             });
-            if (!response.ok) throw new Error();
-            const data = await response.json();
+            const data = await res.json();
             return data.choices[0].message.content;
-        } catch (error) {
-            return "Problem sa konekcijom ili nevažeći API ključ.";
-        }
+        } catch(e) { return "Greška u konekciji."; }
     }
 
     function izgovori(tekst) {
-        if (synth.speaking) synth.cancel();
-
-        const utterThis = new SpeechSynthesisUtterance(tekst);
-        utterThis.lang = 'hr-HR';
-        utterThis.pitch = 1.0;
-        utterThis.rate = 1.15; 
-
-        utterThis.onstart = () => {
-            isAiSpeaking = true; 
-            micBtn.className = 'btn-mic speaking-now';
-            micBtn.innerText = "🛑 Prekini AI Govor";
-            statusText.innerText = "AI govori... Slobodno upadnite u riječ.";
-        };
-
-        utterThis.onend = () => {
-            isAiSpeaking = false; 
-            if (isConversationActive) {
-                micBtn.className = 'btn-mic listening';
-                micBtn.innerText = "🛑 Zaustavi Razgovor";
-                statusText.innerText = "Slušam vas... Govorite.";
-            }
-        };
-
-        synth.speak(utterThis);
+        synth.cancel();
+        const utter = new SpeechSynthesisUtterance(tekst);
+        utter.lang = 'hr-HR';
+        utter.rate = 1.1;
+        synth.speak(utter);
+        statusText.innerText = "Spreman.";
     }
 </script>
 
