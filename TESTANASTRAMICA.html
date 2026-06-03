@@ -2,108 +2,238 @@
 <html lang="bs">
 <head>
     <meta charset="UTF-8">
-    <title>AI Poslovni Asistent - Kompletni Sistem</title>
+    <title>AI Poslovni Asistent - Voice System</title>
+
     <style>
-        body { font-family: sans-serif; background-color: #121212; color: #fff; display: flex; justify-content: center; padding: 20px; }
-        .container { background-color: #1e1e1e; padding: 25px; border-radius: 15px; width: 100%; max-width: 600px; }
-        .text-input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #444; background: #2a2a2a; color: #fff; box-sizing: border-box; }
-        .btn { padding: 12px; margin-top: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; width: 100%; }
+        body {
+            font-family: sans-serif;
+            background-color: #121212;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #1e1e1e;
+            padding: 25px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: #fff;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            width: 100%;
+        }
+
         .btn-send { background: #00adb5; }
         .btn-save { background: #e74c3c; }
-        .output-box { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 50px; }
+        .btn-mic { background: #9b59b6; }
+
+        .output-box {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            min-height: 50px;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="container">
+
     <h1>AI Poslovni Asistent ⚡</h1>
-    <input type="text" id="userName" class="text-input" placeholder="Ime klijenta (za naziv fajla)...">
-    
-   <textarea id="systemPrompt" class="text-input" rows="8">Ti si vrhunski AI poslovni asistent. Tvoj primarni cilj je prodaja i implementacija AI glasovnog asistenta koji preuzima pozive i korisničku podršku 24/7. Sekundarno nudiš izradu web stranica i ostale usluge automatizacije poslovnih procesa.
 
-Ograničenja:
-1. Odgovori su strogo 3 do 4 rečenice.
-2. U svakom razgovoru naglašavaj prednosti glasovne automatizacije.
+    <input type="text" id="userName" class="text-input" placeholder="Ime klijenta...">
 
-Stil komunikacije:
-1. Ako je pitanje kompleksno, koristi uzrečicu: 'Razumijem, trenutak da sagledam sve opcije...'.
-2. Ako je pitanje jednostavno, odgovori direktno.
+    <textarea id="systemPrompt" class="text-input" rows="8">
+Ti si vrhunski AI poslovni asistent. Tvoj cilj je prodaja AI glasovnog asistenta koji preuzima pozive 24/7 i automatizira poslovanje.
+Odgovori su 3-4 rečenice i uvijek naglašavaj benefite automatizacije.
+    </textarea>
 
-Ključna prodajna taktika:
-Uvijek prvo ponudi glasovnog asistenta kao rješenje za uštedu vremena i povećanje efikasnosti. Tek ako klijent iskaže interes za širu digitalnu transformaciju, spomeni web stranice i ostale automatizacije kao podršku toj primarnoj glasovnoj strategiji.</textarea>
-    
-    <input type="text" id="textIn" class="text-input" placeholder="Upišite pitanje i pritisnite Enter..." autocomplete="off">
-    
+    <input type="text" id="textIn" class="text-input" placeholder="Piši ili koristi mikrofon...">
+
+    <button id="micBtn" class="btn btn-mic">🎤 Mikrofon</button>
+
     <div class="output-box">
-        <strong>AI:</strong> <p id="aiText">...</p>
+        <strong>AI:</strong>
+        <p id="aiText">...</p>
     </div>
 
     <button onclick="zavrsiIizbrisi()" class="btn btn-save">💾 Završi i izbriši</button>
+
 </div>
 
 <script>
-    const GROQ_API_KEY = "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";
-    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
-    let audioChunks = [];
-    let mediaRecorder;
+const GROQ_API_KEY = "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";
 
-    // Pokreni snimanje glasa
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-        mediaRecorder.start();
-    });
+let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
 
-    async function pozoviGroqAPI(pitanje) {
-        chatHistory.push({ role: "user", content: pitanje });
-        try {
-            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-                    messages: [{ role: "system", content: document.getElementById('systemPrompt').value }, ...chatHistory]
-                })
-            });
-            const data = await res.json();
-            const aiResponse = data.choices[0].message.content;
-            chatHistory.push({ role: "assistant", content: aiResponse });
-            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-            return aiResponse;
-        } catch(e) { return "Greška u konekciji."; }
+// ================= AI CALL =================
+async function pozoviGroqAPI(pitanje) {
+
+    chatHistory.push({ role: "user", content: pitanje });
+
+    try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${GROQ_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: document.getElementById('systemPrompt').value },
+                    ...chatHistory
+                ]
+            })
+        });
+
+        const data = await res.json();
+        const aiResponse = data.choices[0].message.content;
+
+        chatHistory.push({ role: "assistant", content: aiResponse });
+        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+
+        return aiResponse;
+
+    } catch (e) {
+        return "Greška u konekciji.";
+    }
+}
+
+// ================= TEXT INPUT =================
+document.getElementById('textIn').addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+
+        const val = e.target.value;
+        const res = await pozoviGroqAPI(val);
+
+        document.getElementById('aiText').innerText = res;
+
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(res));
+
+        e.target.value = "";
+    }
+});
+
+// ================= MICROPHONE =================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+let recognition;
+let listening = false;
+
+if (SpeechRecognition) {
+
+    recognition = new SpeechRecognition();
+    recognition.lang = "bs-BA";
+    recognition.interimResults = false;
+
+    recognition.onresult = async (event) => {
+
+        const text = event.results[0][0].transcript;
+
+        document.getElementById('textIn').value = text;
+
+        const res = await pozoviGroqAPI(text);
+
+        document.getElementById('aiText').innerText = res;
+
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(res));
+
+        document.getElementById('textIn').value = "";
+    };
+
+    recognition.onend = () => {
+        listening = false;
+        document.getElementById('micBtn').innerText = "🎤 Mikrofon";
+    };
+}
+
+document.getElementById('micBtn').addEventListener('click', () => {
+
+    if (!recognition) {
+        alert("Browser ne podržava mikrofon.");
+        return;
     }
 
-    document.getElementById('textIn').addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            const val = document.getElementById('textIn').value;
-            const res = await pozoviGroqAPI(val);
-            document.getElementById('aiText').innerText = res;
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(res));
-            document.getElementById('textIn').value = "";
-        }
-    });
+    if (!listening) {
+        recognition.start();
+        listening = true;
+        document.getElementById('micBtn').innerText = "⏹ Stop slušanje";
+    } else {
+        recognition.stop();
+        listening = false;
+    }
+});
 
-    function zavrsiIizbrisi() {
-        let ime = document.getElementById('userName').value.trim() || "nepoznati_klijent";
-        
-        // Tekstualni fajl
-        const text = chatHistory.map(i => `${i.role.toUpperCase()}: ${i.content}`).join('\n\n');
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-        a.download = `Razgovor_${ime}.txt`;
-        a.click();
+// ================= AUDIO RECORD =================
+let audioChunks = [];
+let mediaRecorder;
 
-        // Audio fajl
+navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = e => {
+        audioChunks.push(e.data);
+    };
+});
+
+// ================= EXPORT =================
+function zavrsiIizbrisi() {
+
+    let ime = document.getElementById('userName').value.trim() || "klijent";
+
+    const text = chatHistory
+        .map(i => `${i.role.toUpperCase()}: ${i.content}`)
+        .join('\n\n');
+
+    const file = new Blob([text], { type: 'text/plain' });
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file);
+    a.download = `Razgovor_${ime}.txt`;
+    a.click();
+
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
-        mediaRecorder.onstop = () => {
-            const aAudio = document.createElement('a');
-            aAudio.href = URL.createObjectURL(new Blob(audioChunks, { type: 'audio/webm' }));
-            aAudio.download = `Glas_${ime}.webm`;
-            aAudio.click();
-            localStorage.removeItem('chatHistory');
-            location.reload();
-        };
     }
+
+    mediaRecorder.onstop = () => {
+
+        const audioFile = new Blob(audioChunks, { type: 'audio/webm' });
+
+        const aAudio = document.createElement('a');
+        aAudio.href = URL.createObjectURL(audioFile);
+        aAudio.download = `Glas_${ime}.webm`;
+        aAudio.click();
+
+        localStorage.removeItem('chatHistory');
+        location.reload();
+    };
+}
 </script>
 
 </body>
