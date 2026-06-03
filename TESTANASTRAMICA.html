@@ -1,239 +1,271 @@
 <!DOCTYPE html>
 <html lang="bs">
 <head>
-    <meta charset="UTF-8">
-    <title>AI Poslovni Asistent - Voice System</title>
+<meta charset="UTF-8">
+<title>PRO AI CRM Panel</title>
 
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: #121212;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
+<style>
+body {
+    font-family: sans-serif;
+    background: #0f0f0f;
+    color: white;
+    margin: 0;
+    display: flex;
+}
 
-        .container {
-            background-color: #1e1e1e;
-            padding: 25px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 600px;
-        }
+.sidebar {
+    width: 260px;
+    background: #1b1b1b;
+    padding: 15px;
+    height: 100vh;
+    overflow-y: auto;
+}
 
-        .text-input {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            border: 1px solid #444;
-            background: #2a2a2a;
-            color: #fff;
-            box-sizing: border-box;
-        }
+.main {
+    flex: 1;
+    padding: 20px;
+}
 
-        .btn {
-            padding: 12px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            color: white;
-            font-weight: bold;
-            width: 100%;
-        }
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    background: #2a2a2a;
+    border: 1px solid #333;
+    color: white;
+    border-radius: 6px;
+}
 
-        .btn-send { background: #00adb5; }
-        .btn-save { background: #e74c3c; }
-        .btn-mic { background: #9b59b6; }
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
 
-        .output-box {
-            background: #2a2a2a;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            min-height: 50px;
-        }
-    </style>
+.btn { background: #00adb5; color: white; }
+.btn2 { background: #9b59b6; color: white; }
+.btn3 { background: #e74c3c; color: white; }
+
+.client {
+    padding: 10px;
+    background: #2a2a2a;
+    margin-top: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.client:hover { background: #333; }
+
+.chat-box {
+    background: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+    height: 300px;
+    overflow-y: auto;
+}
+
+.msg-user { color: #00adb5; margin: 5px 0; }
+.msg-ai { color: #9b59b6; margin: 5px 0; }
+
+</style>
 </head>
 
 <body>
 
-<div class="container">
+<!-- SIDEBAR -->
+<div class="sidebar">
 
-    <h1>AI Poslovni Asistent ⚡</h1>
+<h3>👥 Klijenti</h3>
 
-    <input type="text" id="userName" class="text-input" placeholder="Ime klijenta...">
+<input id="clientName" placeholder="Ime klijenta">
 
-    <textarea id="systemPrompt" class="text-input" rows="8">
-Ti si vrhunski AI poslovni asistent. Tvoj cilj je prodaja AI glasovnog asistenta koji preuzima pozive 24/7 i automatizira poslovanje.
-Odgovori su 3-4 rečenice i uvijek naglašavaj benefite automatizacije.
-    </textarea>
+<button class="btn" onclick="addClient()">+ Dodaj klijenta</button>
 
-    <input type="text" id="textIn" class="text-input" placeholder="Piši ili koristi mikrofon...">
+<div id="clients"></div>
 
-    <button id="micBtn" class="btn btn-mic">🎤 Mikrofon</button>
+<hr>
 
-    <div class="output-box">
-        <strong>AI:</strong>
-        <p id="aiText">...</p>
-    </div>
+<h3>⚙️ AI Prompt</h3>
 
-    <button onclick="zavrsiIizbrisi()" class="btn btn-save">💾 Završi i izbriši</button>
+<textarea id="systemPrompt" rows="10">
+Ti si vrhunski AI poslovni asistent specijalizovan za prodaju AI glasovnih agenata koji preuzimaju pozive 24/7 i automatizuju biznise.
+Odgovori su 3-4 rečenice i uvijek fokus na benefite automatizacije.
+</textarea>
+
+<button class="btn2" onclick="savePrompt()">💾 Sačuvaj prompt</button>
+
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<h2 id="activeClientTitle">📂 Nema izabranog klijenta</h2>
+
+<div class="chat-box" id="chatBox"></div>
+
+<input id="input" placeholder="Napiši poruku..." />
+
+<button class="btn" onclick="sendMessage()">Pošalji</button>
+
+<button class="btn2" onclick="startMic()">🎤 Mikrofon</button>
+
+<button class="btn3" onclick="exportClient()">💾 Export klijenta</button>
 
 </div>
 
 <script>
+
 const GROQ_API_KEY = "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";
 
-let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+let clients = JSON.parse(localStorage.getItem("clients") || "{}");
+let activeClient = null;
 
-// ================= AI CALL =================
-async function pozoviGroqAPI(pitanje) {
+// ================= CLIENTS =================
+function addClient() {
+    let name = document.getElementById("clientName").value.trim();
+    if (!name) return;
 
-    chatHistory.push({ role: "user", content: pitanje });
-
-    try {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${GROQ_API_KEY}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: document.getElementById('systemPrompt').value },
-                    ...chatHistory
-                ]
-            })
-        });
-
-        const data = await res.json();
-        const aiResponse = data.choices[0].message.content;
-
-        chatHistory.push({ role: "assistant", content: aiResponse });
-        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-
-        return aiResponse;
-
-    } catch (e) {
-        return "Greška u konekciji.";
+    if (!clients[name]) {
+        clients[name] = { chat: [] };
     }
+
+    save();
+    renderClients();
 }
 
-// ================= TEXT INPUT =================
-document.getElementById('textIn').addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter') {
+function renderClients() {
+    let div = document.getElementById("clients");
+    div.innerHTML = "";
 
-        const val = e.target.value;
-        const res = await pozoviGroqAPI(val);
+    Object.keys(clients).forEach(name => {
+        let el = document.createElement("div");
+        el.className = "client";
+        el.innerText = name;
 
-        document.getElementById('aiText').innerText = res;
+        el.onclick = () => {
+            activeClient = name;
+            document.getElementById("activeClientTitle").innerText = "📂 " + name;
+            renderChat();
+        };
 
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(res));
+        div.appendChild(el);
+    });
+}
 
-        e.target.value = "";
-    }
-});
+function save() {
+    localStorage.setItem("clients", JSON.stringify(clients));
+}
 
-// ================= MICROPHONE =================
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+// ================= CHAT =================
+function renderChat() {
+    let box = document.getElementById("chatBox");
+    box.innerHTML = "";
 
+    if (!activeClient) return;
+
+    clients[activeClient].chat.forEach(m => {
+        let div = document.createElement("div");
+        div.className = m.role === "user" ? "msg-user" : "msg-ai";
+        div.innerText = (m.role === "user" ? "TI: " : "AI: ") + m.content;
+        box.appendChild(div);
+    });
+}
+
+// ================= GROQ =================
+async function callAI(text) {
+
+    let prompt = document.getElementById("systemPrompt").value;
+
+    let messages = [
+        { role: "system", content: prompt },
+        ...clients[activeClient].chat,
+        { role: "user", content: text }
+    ];
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + GROQ_API_KEY,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages
+        })
+    });
+
+    const data = await res.json();
+    return data.choices[0].message.content;
+}
+
+// ================= SEND =================
+async function sendMessage() {
+
+    if (!activeClient) return alert("Izaberi klijenta");
+
+    let input = document.getElementById("input");
+    let text = input.value.trim();
+
+    if (!text) return;
+
+    clients[activeClient].chat.push({ role: "user", content: text });
+
+    let reply = await callAI(text);
+
+    clients[activeClient].chat.push({ role: "assistant", content: reply });
+
+    save();
+    renderChat();
+
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
+
+    input.value = "";
+}
+
+// ================= MIC =================
 let recognition;
-let listening = false;
 
-if (SpeechRecognition) {
+function startMic() {
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return alert("Browser ne podržava mikrofon");
 
     recognition = new SpeechRecognition();
     recognition.lang = "bs-BA";
-    recognition.interimResults = false;
 
-    recognition.onresult = async (event) => {
-
-        const text = event.results[0][0].transcript;
-
-        document.getElementById('textIn').value = text;
-
-        const res = await pozoviGroqAPI(text);
-
-        document.getElementById('aiText').innerText = res;
-
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(res));
-
-        document.getElementById('textIn').value = "";
+    recognition.onresult = async (e) => {
+        document.getElementById("input").value = e.results[0][0].transcript;
+        await sendMessage();
     };
 
-    recognition.onend = () => {
-        listening = false;
-        document.getElementById('micBtn').innerText = "🎤 Mikrofon";
-    };
+    recognition.start();
 }
-
-document.getElementById('micBtn').addEventListener('click', () => {
-
-    if (!recognition) {
-        alert("Browser ne podržava mikrofon.");
-        return;
-    }
-
-    if (!listening) {
-        recognition.start();
-        listening = true;
-        document.getElementById('micBtn').innerText = "⏹ Stop slušanje";
-    } else {
-        recognition.stop();
-        listening = false;
-    }
-});
-
-// ================= AUDIO RECORD =================
-let audioChunks = [];
-let mediaRecorder;
-
-navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-
-    mediaRecorder = new MediaRecorder(stream);
-
-    mediaRecorder.ondataavailable = e => {
-        audioChunks.push(e.data);
-    };
-});
 
 // ================= EXPORT =================
-function zavrsiIizbrisi() {
+function exportClient() {
 
-    let ime = document.getElementById('userName').value.trim() || "klijent";
+    if (!activeClient) return;
 
-    const text = chatHistory
-        .map(i => `${i.role.toUpperCase()}: ${i.content}`)
-        .join('\n\n');
+    let text = clients[activeClient].chat
+        .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+        .join("\n\n");
 
-    const file = new Blob([text], { type: 'text/plain' });
+    let blob = new Blob([text], { type: "text/plain" });
 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(file);
-    a.download = `Razgovor_${ime}.txt`;
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = activeClient + "_CRM.txt";
     a.click();
-
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-    }
-
-    mediaRecorder.onstop = () => {
-
-        const audioFile = new Blob(audioChunks, { type: 'audio/webm' });
-
-        const aAudio = document.createElement('a');
-        aAudio.href = URL.createObjectURL(audioFile);
-        aAudio.download = `Glas_${ime}.webm`;
-        aAudio.click();
-
-        localStorage.removeItem('chatHistory');
-        location.reload();
-    };
 }
+
+// ================= INIT =================
+renderClients();
+
 </script>
 
 </body>
