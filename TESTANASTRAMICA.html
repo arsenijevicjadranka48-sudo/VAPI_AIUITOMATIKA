@@ -63,6 +63,13 @@ button {
 
 .client:hover { background: #333; }
 
+.client small {
+    display: block;
+    color: #00adb5;
+    margin-top: 4px;
+    font-size: 11px;
+}
+
 .chat-box {
     background: #1e1e1e;
     padding: 15px;
@@ -82,6 +89,7 @@ button {
 
 <h3>👥 Klijenti</h3>
 <input id="clientName" placeholder="Ime klijenta">
+<input id="clientPhone" placeholder="Broj telefona (npr. +38761...)">
 <button class="btn" onclick="addClient()">+ Dodaj klijenta</button>
 <div id="clients"></div>
 
@@ -165,15 +173,22 @@ let isDialing = false;
 // ================= CLIENTS =================
 function addClient() {
     let name = document.getElementById("clientName").value.trim();
+    let phone = document.getElementById("clientPhone").value.trim();
+    
     if (!name) return alert("Molimo unesite ime klijenta!");
+    if (!phone) return alert("Molimo unesite broj telefona klijenta!");
 
     if (!clients[name]) {
-        clients[name] = { chat: [] };
+        clients[name] = { phone: phone, chat: [] };
+    } else {
+        // Ako klijent već postoji, samo mu ažuriramo broj telefona
+        clients[name].phone = phone;
     }
 
     save();
     renderClients();
     document.getElementById("clientName").value = "";
+    document.getElementById("clientPhone").value = "";
 }
 
 function renderClients() {
@@ -183,11 +198,15 @@ function renderClients() {
     Object.keys(clients).forEach(name => {
         let el = document.createElement("div");
         el.className = "client";
-        el.innerText = name;
+        
+        // Prikazujemo ime i broj telefona u listi klijenta
+        let phoneText = clients[name].phone ? ` <small>📞 ${clients[name].phone}</small>` : '';
+        el.innerHTML = `<strong>${name}</strong>${phoneText}`;
 
         el.onclick = () => {
             activeClient = name;
-            document.getElementById("activeClientTitle").innerText = "📂 " + name;
+            let currentPhone = clients[name].phone ? ` (${clients[name].phone})` : '';
+            document.getElementById("activeClientTitle").innerText = "📂 " + name + currentPhone;
             renderChat();
         };
 
@@ -254,12 +273,14 @@ async function processNextCall() {
     document.getElementById("dialerStatus").innerText = `▶️ Aktiviran klijent: ${nextTarget.ime}`;
 
     if (!clients[nextTarget.ime]) {
-        clients[nextTarget.ime] = { chat: [] };
+        // Ako povlačimo iz Google Sheets, mapa pretpostavlja polja 'ime' i 'telefon' iz vaše tabele
+        clients[nextTarget.ime] = { phone: nextTarget.telefon || "", chat: [] };
         save();
         renderClients();
     }
     activeClient = nextTarget.ime;
-    document.getElementById("activeClientTitle").innerText = "📂 " + nextTarget.ime;
+    let currentPhone = clients[activeClient].phone ? ` (${clients[activeClient].phone})` : '';
+    document.getElementById("activeClientTitle").innerText = "📂 " + nextTarget.ime + currentPhone;
 
     let uvodniTekst = `Pozdrav ${nextTarget.ime}. Kako vam mogu pomoći danas da automatizujete vaš biznis?`;
     
@@ -418,7 +439,8 @@ function startMic() {
 function exportClient() {
     if (!activeClient) return;
 
-    let text = clients[activeClient].chat
+    let text = `KLIJENT: ${activeClient}\nTELEFON: ${clients[activeClient].phone || 'Nije unesen'}\n\n`;
+    text += clients[activeClient].chat
         .map(m => `${m.role.toUpperCase()}: ${m.content}`)
         .join("\n\n");
 
