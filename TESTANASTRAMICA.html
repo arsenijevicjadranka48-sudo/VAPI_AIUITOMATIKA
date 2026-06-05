@@ -78,7 +78,6 @@ button {
 
 <body>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
 
 <h3>👥 Klijenti</h3>
@@ -86,9 +85,34 @@ button {
 <button class="btn" onclick="addClient()">+ Dodaj klijenta</button>
 <div id="clients"></div>
 
+<div class="section-title" style="color: #00ADB5; font-weight: bold; margin-top: 15px; margin-bottom: 5px;">
+    🔑 Groq Podešavanja
+</div>
+<input type="password" id="groqApiKey" placeholder="Unesi Groq API ključ (gsk_...)" style="
+    width: 100%; 
+    padding: 10px; 
+    background: #222; 
+    border: 1px solid #444; 
+    color: white; 
+    border-radius: 6px; 
+    margin-bottom: 10px;
+    box-sizing: border-box;
+">
+<button onclick="saveGroqKey()" style="
+    width: 100%; 
+    padding: 10px; 
+    background: #3a3a3a; 
+    color: white; 
+    border: none; 
+    border-radius: 6px; 
+    cursor: pointer;
+    font-weight: bold;
+">
+    Sačuvaj Groq Ključ
+</button>
+
 <hr>
 
-<!-- TELNYX CONFIGURATION -->
 <h3>📞 Telnyx Podešavanja</h3>
 <label style="font-size: 12px; color: #aaa;">Aktivni Telnyx Broj:</label>
 <input id="telnyxNumber" value="+12182558381" placeholder="+1xxxxxxxxxx">
@@ -99,7 +123,6 @@ button {
 
 <hr>
 
-<!-- AUTOMATSKO POKRETANJE IZ GOOGLE SHEETS -->
 <h3>📊 Google Sheets Pozivač</h3>
 <label style="font-size: 12px; color: #aaa;">Make.com Webhook URL:</label>
 <input id="makeWebhookUrl" placeholder="https://hook.eu1.make.com/...">
@@ -118,7 +141,6 @@ Odgovori su 3-4 rečenice i uvijek fokus na benefite automatizacije.
 
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
 <h2 id="activeClientTitle">📂 Nema izabranog klijenta</h2>
@@ -133,8 +155,6 @@ Odgovori su 3-4 rečenice i uvijek fokus na benefite automatizacije.
 </div>
 
 <script>
-const GROQ_API_KEY = "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";
-
 let clients = JSON.parse(localStorage.getItem("clients") || "{}");
 let activeClient = null;
 
@@ -145,7 +165,7 @@ let isDialing = false;
 // ================= CLIENTS =================
 function addClient() {
     let name = document.getElementById("clientName").value.trim();
-    if (!name) return;
+    if (!name) return alert("Molimo unesite ime klijenta!");
 
     if (!clients[name]) {
         clients[name] = { chat: [] };
@@ -233,7 +253,6 @@ async function processNextCall() {
     let nextTarget = queueNumbers.shift(); 
     document.getElementById("dialerStatus").innerText = `▶️ Aktiviran klijent: ${nextTarget.ime}`;
 
-    // Otvaramo klijenta u panelu
     if (!clients[nextTarget.ime]) {
         clients[nextTarget.ime] = { chat: [] };
         save();
@@ -242,19 +261,16 @@ async function processNextCall() {
     activeClient = nextTarget.ime;
     document.getElementById("activeClientTitle").innerText = "📂 " + nextTarget.ime;
 
-    // VAŠ ORIGINALNI GLASOVNI ASISTENT: Generiše uvodnu poruku i izgovara je preko zvučnika
     let uvodniTekst = `Pozdrav ${nextTarget.ime}. Kako vam mogu pomoći danas da automatizujete vaš biznis?`;
     
     clients[activeClient].chat.push({ role: "assistant", content: uvodniTekst });
     save();
     renderChat();
 
-    // Govor kroz vaš ugrađeni pretraživački glas
     let utterance = new SpeechSynthesisUtterance(uvodniTekst);
     utterance.lang = "bs-BA";
     
     utterance.onend = () => {
-        // Kada završi govor, sistem čeka 15 sekundi za reakciju prije prelaska na sljedećeg klijenta u tabeli
         setTimeout(() => {
             if (isDialing) processNextCall();
         }, 15000);
@@ -298,55 +314,86 @@ function loadPrompt() {
     if (savedPrompt) document.getElementById("systemPrompt").value = savedPrompt;
 }
 
-// ================= GROQ =================
-async function callAI(text) {
-    let prompt = document.getElementById("systemPrompt").value;
+// ================= GROQ KEY LOGIC =================
+function saveGroqKey() {
+    let key = document.getElementById("groqApiKey").value.trim();
+    if(key) {
+        localStorage.setItem("my_groq_key", key);
+        alert("Groq ključ uspješno sačuvan!");
+    } else {
+        alert("Molimo unesite ispravan ključ.");
+    }
+}
+
+// ================= GROQ API CALL =================
+async function callAI(userMessage) {
+    let apiKey = document.getElementById("groqApiKey").value.trim() || localStorage.getItem("my_groq_key");
+    let currentPrompt = document.getElementById("systemPrompt").value;
+    
+    if (!apiKey) {
+        alert("Greška: Niste unijeli Groq API ključ na panelu!");
+        return "Molimo unesite ispravan Groq API ključ sa lijeve strane.";
+    }
 
     let messages = [
-        { role: "system", content: prompt },
-        ...clients[activeClient].chat,
-        { role: "user", content: text }
+        { role: "system", content: currentPrompt },
+        ...clients[activeClient].chat
     ];
 
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Authorization": "Bearer " + GROQ_API_KEY,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages
-        })
-    });
+    try {
+        let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer " + apiKey,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: messages
+            })
+        });
 
-    const data = await res.json();
-    return data.choices[0].message.content;
+        let data = await response.json();
+
+        if (data.error) {
+            console.error("Groq API Greška:", data.error.message);
+            return "Groq Greška: " + data.error.message;
+        }
+
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+            return data.choices[0].message.content;
+        } else {
+            return "Sistem je vratio nepoznat format odgovora.";
+        }
+
+    } catch (error) {
+        console.error("Mrežna greška:", error);
+        return "Došlo je do greške u povezivanju sa Groq serverom.";
+    }
 }
 
 // ================= SEND =================
 async function sendMessage() {
     if (!activeClient) return alert("Izaberi klijenta");
 
-    let input = document.getElementById("input");
-    let text = input.value.trim();
+    let inputField = document.getElementById("input");
+    let text = inputField.value.trim();
 
     if (!text) return;
 
     clients[activeClient].chat.push({ role: "user", content: text });
+    renderChat();
+    inputField.value = "";
 
     let reply = await callAI(text);
 
     clients[activeClient].chat.push({ role: "assistant", content: reply });
-
     save();
     renderChat();
 
     let utterance = new SpeechSynthesisUtterance(reply);
     utterance.lang = "bs-BA";
     window.speechSynthesis.speak(utterance);
-
-    input.value = "";
 }
 
 // ================= MIC =================
@@ -384,9 +431,15 @@ function exportClient() {
 }
 
 // ================= INIT =================
-renderClients();
-loadTelnyxConfig();
-loadPrompt();
+document.addEventListener("DOMContentLoaded", () => {
+    let savedKey = localStorage.getItem("my_groq_key");
+    if(savedKey) {
+        document.getElementById("groqApiKey").value = savedKey;
+    }
+    renderClients();
+    loadTelnyxConfig();
+    loadPrompt();
+});
 </script>
 
 </body>
