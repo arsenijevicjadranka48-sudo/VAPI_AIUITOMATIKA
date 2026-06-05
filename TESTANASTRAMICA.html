@@ -34,6 +34,7 @@ input, textarea {
     border: 1px solid #333;
     color: white;
     border-radius: 6px;
+    box-sizing: border-box;
 }
 
 button {
@@ -49,6 +50,7 @@ button {
 .btn { background: #00adb5; color: white; }
 .btn2 { background: #9b59b6; color: white; }
 .btn3 { background: #e74c3c; color: white; }
+.btn-dark { background: #444; color: white; }
 
 .client {
     padding: 10px;
@@ -80,22 +82,28 @@ button {
 <div class="sidebar">
 
 <h3>👥 Klijenti</h3>
-
 <input id="clientName" placeholder="Ime klijenta">
-
 <button class="btn" onclick="addClient()">+ Dodaj klijenta</button>
-
 <div id="clients"></div>
 
 <hr>
 
-<h3>⚙️ AI Prompt</h3>
+<!-- NOVO: TELNYX CONFIGURATION -->
+<h3>📞 Telnyx Podešavanja</h3>
+<label style="font-size: 12px; color: #aaa;">Aktivni Telnyx Broj:</label>
+<input id="telnyxNumber" value="+12182558381" placeholder="+1xxxxxxxxxx">
 
+<label style="font-size: 12px; color: #aaa; margin-top: 5px; display: block;">Telnyx API Key:</label>
+<input id="telnyxApiKey" type="password" placeholder="Unesi Telnyx API ključ...">
+<button class="btn-dark" onclick="saveTelnyxConfig()">💾 Sačuvaj Telnyx</button>
+
+<hr>
+
+<h3>⚙️ AI Prompt</h3>
 <textarea id="systemPrompt" rows="10">
 Ti si vrhunski AI poslovni asistent specijalizovan za prodaju AI glasovnih agenata koji preuzimaju pozive 24/7 i automatizuju biznise.
 Odgovori su 3-4 rečenice i uvijek fokus na benefite automatizacije.
 </textarea>
-
 <button class="btn2" onclick="savePrompt()">💾 Sačuvaj prompt</button>
 
 </div>
@@ -108,11 +116,8 @@ Odgovori su 3-4 rečenice i uvijek fokus na benefite automatizacije.
 <div class="chat-box" id="chatBox"></div>
 
 <input id="input" placeholder="Napiši poruku..." />
-
 <button class="btn" onclick="sendMessage()">Pošalji</button>
-
 <button class="btn2" onclick="startMic()">🎤 Mikrofon</button>
-
 <button class="btn3" onclick="exportClient()">💾 Export klijenta</button>
 
 </div>
@@ -135,6 +140,7 @@ function addClient() {
 
     save();
     renderClients();
+    document.getElementById("clientName").value = "";
 }
 
 function renderClients() {
@@ -160,6 +166,22 @@ function save() {
     localStorage.setItem("clients", JSON.stringify(clients));
 }
 
+// ================= TELNYX STORAGE =================
+function saveTelnyxConfig() {
+    let num = document.getElementById("telnyxNumber").value.trim();
+    let key = document.getElementById("telnyxApiKey").value.trim();
+    localStorage.setItem("telnyx_number", num);
+    localStorage.setItem("telnyx_api_key", key);
+    alert("Telnyx podešavanja su uspješno sačuvana!");
+}
+
+function loadTelnyxConfig() {
+    let savedNum = localStorage.getItem("telnyx_number");
+    let savedKey = localStorage.getItem("telnyx_api_key");
+    if (savedNum) document.getElementById("telnyxNumber").value = savedNum;
+    if (savedKey) document.getElementById("telnyxApiKey").value = savedKey;
+}
+
 // ================= CHAT =================
 function renderChat() {
     let box = document.getElementById("chatBox");
@@ -173,11 +195,23 @@ function renderChat() {
         div.innerText = (m.role === "user" ? "TI: " : "AI: ") + m.content;
         box.appendChild(div);
     });
+    box.scrollTop = box.scrollHeight;
+}
+
+// ================= PROMPT =================
+function savePrompt() {
+    let prompt = document.getElementById("systemPrompt").value;
+    localStorage.setItem("system_prompt", prompt);
+    alert("AI Prompt je sačuvan!");
+}
+
+function loadPrompt() {
+    let savedPrompt = localStorage.getItem("system_prompt");
+    if (savedPrompt) document.getElementById("systemPrompt").value = savedPrompt;
 }
 
 // ================= GROQ =================
 async function callAI(text) {
-
     let prompt = document.getElementById("systemPrompt").value;
 
     let messages = [
@@ -204,7 +238,6 @@ async function callAI(text) {
 
 // ================= SEND =================
 async function sendMessage() {
-
     if (!activeClient) return alert("Izaberi klijenta");
 
     let input = document.getElementById("input");
@@ -212,7 +245,7 @@ async function sendMessage() {
 
     if (!text) return;
 
-    clients[activeClient].chat.push({ role: "user", content: text });
+    clients[activeClient].chat.push({ role: "user", content: content: text });
 
     let reply = await callAI(text);
 
@@ -228,9 +261,7 @@ async function sendMessage() {
 
 // ================= MIC =================
 let recognition;
-
 function startMic() {
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) return alert("Browser ne podržava mikrofon");
@@ -248,7 +279,6 @@ function startMic() {
 
 // ================= EXPORT =================
 function exportClient() {
-
     if (!activeClient) return;
 
     let text = clients[activeClient].chat
@@ -265,6 +295,8 @@ function exportClient() {
 
 // ================= INIT =================
 renderClients();
+loadTelnyxConfig();
+loadPrompt();
 
 </script>
 
