@@ -124,7 +124,7 @@ button {
 <h3>📞 Telnyx Podešavanja</h3>
 <label style="font-size: 12px; color: #aaa;">Aktivni Telnyx Broj:</label>
 <input id="telnyxNumber" value="+12182558381" placeholder="+1xxxxxxxxxx">
-
+    
 <label style="font-size: 12px; color: #aaa; margin-top: 5px; display: block;">Telnyx API Key:</label>
 <input id="telnyxApiKey" type="password" placeholder="Unesi Telnyx API ključ...">
 <button class="btn-dark" onclick="saveTelnyxConfig()">💾 Sačuvaj Telnyx</button>
@@ -177,13 +177,10 @@ async function pokreniPozivIzPanela() {
     let brojTelefona = clients[activeClient].phone;
     if (!brojTelefona) return alert("Izabrani klijent nema upisan broj telefona!");
     
-    // Pozivamo tvoju glavnu logiku za okidanje poziva prema AI agentu
     if (typeof pokreniPoziv === "function") {
         pokreniPoziv(brojTelefona);
     } else {
-        // Ako funkcija nije preimenovana, ovdje je direktni Vapi/Telnyx poziv
         alert("Pokrećem poziv AI agentom na broj: " + brojTelefona);
-        // Ovdje sistem šalje podatak na tvoj webhook/API
     }
 }
 
