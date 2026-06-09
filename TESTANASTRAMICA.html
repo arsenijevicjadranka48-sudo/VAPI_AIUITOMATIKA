@@ -1,6 +1,3 @@
-Evo kompletnog, spojenog koda od prve do zadnje linije (<!DOCTYPE html> do </html>). Sve je čisto, spremno za kopiranje i odmah uvezano sa tvojom novom logikom bez ikakvih Vapi skripti ili ručnog upisivanja API ključeva.
-
-HTML
 <!DOCTYPE html>
 <html lang="bs">
 <head>
@@ -116,7 +113,6 @@ border-radius:10px;
 
 <script>
 
-// Centralni URL tvoje Supabase Edge funkcije koja sama čupa ključeve iz Secrets-a
 const FUNCTION_URL = "https://mpgbpgmsorunfbdskbwn.supabase.co/functions/v1/autovox-backend";
 
 let clients = JSON.parse(localStorage.getItem("clients") || "{}");
@@ -135,8 +131,6 @@ function save() {
 localStorage.setItem("clients", JSON.stringify(clients));
 }
 
-// ---------------- PROMPT PODEŠAVANJA ----------------
-
 function savePrompt() {
 localStorage.setItem("system_prompt", systemPrompt.value);
 alert("Prompt sačuvan!");
@@ -145,8 +139,6 @@ alert("Prompt sačuvan!");
 function loadPrompt() {
 systemPrompt.value = localStorage.getItem("system_prompt") || defaultPrompt;
 }
-
-// ---------------- UPRAVLJANJE KLIJENTIMA ----------------
 
 function addClient() {
 if (!name.value || !phone.value) return alert("Popuni polja!");
@@ -185,8 +177,6 @@ list.appendChild(d);
 });
 }
 
-// ---------------- Slanje poruke na Groq (preko Supabase-a) ----------------
-
 async function ai(messages) {
 let system = localStorage.getItem("system_prompt") || defaultPrompt;
 
@@ -210,8 +200,6 @@ try {
     return "Greška u komunikaciji sa serverom.";
 }
 }
-
-// ---------------- CHAT LOGIKA NA EKRANU ----------------
 
 async function send() {
 if (!active) return alert("Izaberi klijenta");
@@ -258,8 +246,6 @@ chat.appendChild(d);
 chat.scrollTop = chat.scrollHeight;
 }
 
-// ---------------- PREPOZNAVANJE GLASA (CRM Voice) ----------------
-
 function voice() {
 const S = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!S) return alert("Voice nije podržan u ovom browseru");
@@ -273,8 +259,6 @@ msg.value = e.results[0][0].transcript;
 
 r.start();
 }
-
-// ---------------- POKRETANJE SVOJEG TELNYX POZIVNOG SISTEMA ----------------
 
 async function call() {
 if (!active) return alert("Izaberi klijenta");
@@ -300,8 +284,6 @@ try {
     alert("Konekcija sa serverom je prekinuta.");
 }
 }
-
-// ---------------- INICIJALIZACIJA NA STARTU ----------------
 
 document.addEventListener("DOMContentLoaded", () => {
 render();
