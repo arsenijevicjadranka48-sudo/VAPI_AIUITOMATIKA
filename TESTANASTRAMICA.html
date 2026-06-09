@@ -2,147 +2,327 @@
 <html lang="bs">
 <head>
 <meta charset="UTF-8">
-<title>PRO AI CRM Panel - Local Auto Dialer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Call Center CRM FULL</title>
+
 <style>
-    body { font-family: sans-serif; background: #0f0f0f; color: white; margin: 0; display: flex; }
-    .sidebar { width: 260px; background: #1b1b1b; padding: 15px; height: 100vh; overflow-y: auto; }
-    .main { flex: 1; padding: 20px; }
-    input { width: 100%; padding: 10px; margin-top: 8px; background: #2a2a2a; border: 1px solid #333; color: white; border-radius: 6px; box-sizing: border-box; }
-    button { width: 100%; padding: 10px; margin-top: 8px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .btn { background: #00adb5; color: white; }
-    .btn2 { background: #9b59b6; color: white; }
-    .btn-dark { background: #444; color: white; }
-    .btn-green { background: #2ecc71; color: white; }
-    .client { padding: 10px; background: #2a2a2a; margin-top: 8px; border-radius: 6px; cursor: pointer; }
-    .client:hover { background: #333; }
-    .client small { display: block; color: #00adb5; margin-top: 4px; font-size: 11px; }
-    .chat-box { background: #1e1e1e; padding: 15px; border-radius: 10px; height: 300px; overflow-y: auto; }
-    .msg-user { color: #00adb5; margin: 5px 0; }
-    .msg-ai { color: #9b59b6; margin: 5px 0; }
+body {
+margin:0;
+font-family:sans-serif;
+display:flex;
+background:#0f0f0f;
+color:white;
+}
+
+.sidebar {
+width:280px;
+background:#1b1b1b;
+padding:15px;
+height:100vh;
+overflow:auto;
+}
+
+.main {
+flex:1;
+padding:20px;
+}
+
+input, textarea, button {
+width:100%;
+padding:10px;
+margin-top:8px;
+border-radius:6px;
+border:none;
+box-sizing:border-box;
+}
+
+input, textarea {
+background:#2a2a2a;
+color:white;
+}
+
+textarea {
+height:140px;
+resize:none;
+}
+
+.btn { background:#00adb5; color:white; cursor:pointer; }
+.btn2 { background:#9b59b6; color:white; cursor:pointer; }
+.btn3 { background:#2ecc71; color:white; cursor:pointer; }
+
+.client {
+background:#2a2a2a;
+padding:10px;
+margin-top:8px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.client:hover { background:#333; }
+
+.chat {
+height:320px;
+overflow:auto;
+background:#1e1e1e;
+padding:10px;
+border-radius:10px;
+}
+
+.user { color:#00adb5; margin:5px 0; }
+.ai { color:#9b59b6; margin:5px 0; }
 </style>
+
 </head>
+
 <body>
 
+<!-- SIDEBAR -->
 <div class="sidebar">
-    <h3>👥 Klijenti</h3>
-    <input id="clientName" placeholder="Ime klijenta">
-    <input id="clientPhone" placeholder="Broj telefona (npr. +1...)">
-    <button class="btn" onclick="addClient()">+ Dodaj klijenta</button>
-    <div id="clients"></div>
-    <hr>
-    <h3>📞 API Podešavanja</h3>
-    <label style="font-size: 12px; color: #aaa;">Groq API Key:</label>
-    <input id="groqApiKey" type="password" placeholder="Unesi Groq API ključ...">
-    <label style="font-size: 12px; color: #aaa;">Aktivni Telnyx Broj:</label>
-    <input id="telnyxNumber" value="+12182558381">
-    <label style="font-size: 12px; color: #aaa;">Telnyx API Key:</label>
-    <input id="telnyxApiKey" type="password" placeholder="Unesi Telnyx API ključ...">
-    <button class="btn-dark" onclick="saveTelnyxConfig()">💾 Sačuvaj API ključeve</button>
+
+<h3>👥 Klijenti</h3>
+
+<input id="name" placeholder="Ime klijenta">
+<input id="phone" placeholder="Telefon">
+
+<button class="btn" onclick="addClient()">Dodaj klijenta</button>
+
+<div id="list"></div>
+
+<hr>
+
+<h3>🔑 API Podešavanja</h3>
+
+<input id="groq" type="password" placeholder="Groq API key">
+<input id="telnyx" type="password" placeholder="Telnyx API key">
+<input id="number" placeholder="Telnyx broj">
+
+<button class="btn" onclick="save()">💾 Sačuvaj</button>
+
+<hr>
+
+<h3>🧠 AI Prompt</h3>
+
+<textarea id="systemPrompt"></textarea>
+
+<button class="btn" onclick="savePrompt()">💾 Save Prompt</button>
+
 </div>
 
+<!-- MAIN -->
 <div class="main">
-    <h2 id="activeClientTitle">📂 Nema izabranog klijenta</h2>
-    <div class="chat-box" id="chatBox"></div>
-    <input id="input" placeholder="Napiši poruku..." />
-    <button class="btn" onclick="sendMessage()">Pošalji</button>
-    <button id="micBtn" class="btn2" onclick="startSpeechRecognition()">🎤 Govori</button>
-    <button class="btn-green" onclick="pokreniPozivIzPanela()">📞 Pozovi AI Agentom</button>
+
+<h2 id="title">📂 Nema izabranog klijenta</h2>
+
+<div class="chat" id="chat"></div>
+
+<input id="msg" placeholder="Poruka...">
+
+<button class="btn" onclick="send()">Pošalji AI</button>
+<button class="btn2" onclick="voice()">🎤 Voice</button>
+<button class="btn3" onclick="call()">📞 Call AI</button>
+
 </div>
 
 <script>
-    let clients = JSON.parse(localStorage.getItem("clients") || "{}");
-    let activeClient = null;
 
-    function saveTelnyxConfig() {
-        localStorage.setItem("telnyx_number", document.getElementById("telnyxNumber").value);
-        localStorage.setItem("telnyx_api_key", document.getElementById("telnyxApiKey").value);
-        localStorage.setItem("groq_api_key", document.getElementById("groqApiKey").value);
-        alert("Svi API ključevi su sačuvani!");
-    }
+let clients = JSON.parse(localStorage.getItem("clients") || "{}");
+let active = null;
 
-    function loadTelnyxConfig() {
-        if(localStorage.getItem("telnyx_number")) document.getElementById("telnyxNumber").value = localStorage.getItem("telnyx_number");
-        if(localStorage.getItem("telnyx_api_key")) document.getElementById("telnyxApiKey").value = localStorage.getItem("telnyx_api_key");
-        if(localStorage.getItem("groq_api_key")) document.getElementById("groqApiKey").value = localStorage.getItem("groq_api_key");
-    }
+const defaultPrompt =
+`Ti si profesionalni AI sales agent u call centru.
+Tvoj zadatak je:
+- kratki i jasni odgovori
+- fokus na prodaju
+- vodi korisnika ka akciji
+- koristi lokalni jezik (BHS)
+`;
 
-    // GLAVNA FUNKCIJA ZA PORUKE KOJA TI JE FALILA
-    function sendMessage() {
-        let input = document.getElementById("input");
-        let text = input.value.trim();
-        if (!text || !activeClient) return alert("Izaberi klijenta i unesi poruku!");
+function save() {
+localStorage.setItem("groq", groq.value);
+localStorage.setItem("telnyx", telnyx.value);
+localStorage.setItem("number", number.value);
+localStorage.setItem("clients", JSON.stringify(clients));
+alert("Sačuvano!");
+}
 
-        clients[activeClient].chat.push({ role: "user", content: text });
-        save();
-        renderChat();
-        input.value = "";
-    }
+function load() {
+groq.value = localStorage.getItem("groq") || "";
+telnyx.value = localStorage.getItem("telnyx") || "";
+number.value = localStorage.getItem("number") || "";
+}
 
-    function startSpeechRecognition() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'bs-BA';
-        recognition.onstart = () => { document.getElementById("micBtn").innerText = "Slušam..."; };
-        recognition.onresult = (event) => {
-            document.getElementById("input").value = event.results[0][0].transcript;
-            document.getElementById("micBtn").innerText = "🎤 Govori";
-        };
-        recognition.start();
-    }
+// ---------------- PROMPT ----------------
 
-    async function pokreniPoziv(broj) {
-        const url = "https://mpgbpgmsorunfbdskbwn.supabase.co/functions/v1/telnyx-webhook";
-        try {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    "to": broj,
-                    "telnyx_key": localStorage.getItem("telnyx_api_key"),
-                    "groq_key": localStorage.getItem("groq_api_key")
-                })
-            });
-            alert(response.ok ? "Poziv poslat!" : "Greška servera.");
-        } catch (err) { alert("Greška: " + err.message); }
-    }
+function savePrompt() {
+localStorage.setItem("system_prompt", systemPrompt.value);
+alert("Prompt sačuvan!");
+}
 
-    function pokreniPozivIzPanela() {
-        if (!activeClient) return alert("Izaberi klijenta!");
-        pokreniPoziv(clients[activeClient].phone);
-    }
+function loadPrompt() {
+systemPrompt.value =
+localStorage.getItem("system_prompt") || defaultPrompt;
+}
 
-    function addClient() {
-        let name = document.getElementById("clientName").value.trim();
-        let phone = document.getElementById("clientPhone").value.trim();
-        if (!name || !phone) return alert("Popuni polja!");
-        clients[name] = { phone: phone, chat: [] };
-        save(); renderClients();
-    }
+// ---------------- CLIENTS ----------------
 
-    function save() { localStorage.setItem("clients", JSON.stringify(clients)); }
+function addClient() {
+if (!name.value || !phone.value) return alert("Popuni polja!");
 
-    function renderClients() {
-        let div = document.getElementById("clients"); div.innerHTML = "";
-        Object.keys(clients).forEach(name => {
-            let el = document.createElement("div");
-            el.className = "client";
-            el.innerHTML = `<strong>${name}</strong> <small>📞 ${clients[name].phone}</small>`;
-            el.onclick = () => { activeClient = name; document.getElementById("activeClientTitle").innerText = "📂 " + name; renderChat(); };
-            div.appendChild(el);
-        });
-    }
+clients[name.value] = {
+phone: phone.value,
+chat: []
+};
 
-    function renderChat() {
-        let box = document.getElementById("chatBox"); box.innerHTML = "";
-        if (!activeClient) return;
-        clients[activeClient].chat.forEach(m => {
-            let div = document.createElement("div");
-            div.className = m.role === "user" ? "msg-user" : "msg-ai";
-            div.innerText = (m.role === "user" ? "TI: " : "AI: ") + m.content;
-            box.appendChild(div);
-        });
-    }
+save();
+render();
+}
 
-    document.addEventListener("DOMContentLoaded", () => { renderClients(); loadTelnyxConfig(); });
+function render() {
+list.innerHTML = "";
+
+Object.keys(clients).forEach(c => {
+let d = document.createElement("div");
+d.className = "client";
+
+d.innerHTML = `
+<strong>${c}</strong>
+<br>
+<small>📞 ${clients[c].phone}</small>
+`;
+
+d.onclick = () => {
+active = c;
+title.innerText = "📂 " + c;
+draw();
+};
+
+list.appendChild(d);
+});
+}
+
+// ---------------- AI ----------------
+
+async function ai(messages) {
+
+let key = localStorage.getItem("groq");
+
+let system =
+localStorage.getItem("system_prompt") || defaultPrompt;
+
+let res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+method: "POST",
+headers: {
+"Authorization": "Bearer " + key,
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+model: "llama3-70b-8192",
+messages: [
+{ role: "system", content: system },
+...messages
+]
+})
+});
+
+let data = await res.json();
+return data.choices?.[0]?.message?.content || "AI error";
+}
+
+// ---------------- SEND ----------------
+
+async function send() {
+
+if (!active) return alert("Izaberi klijenta");
+
+if (!clients[active].chat) clients[active].chat = [];
+
+clients[active].chat.push({
+role: "user",
+content: msg.value
+});
+
+draw();
+
+let reply = await ai(clients[active].chat);
+
+clients[active].chat.push({
+role: "assistant",
+content: reply
+});
+
+save();
+draw();
+
+msg.value = "";
+}
+
+// ---------------- DRAW CHAT ----------------
+
+function draw() {
+chat.innerHTML = "";
+
+if (!active) return;
+
+let c = clients[active].chat || [];
+
+c.forEach(m => {
+let d = document.createElement("div");
+d.className = m.role === "user" ? "user" : "ai";
+
+d.innerText =
+(m.role === "user" ? "TI: " : "AI: ") + m.content;
+
+chat.appendChild(d);
+});
+
+chat.scrollTop = chat.scrollHeight;
+}
+
+// ---------------- VOICE ----------------
+
+function voice() {
+const S = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!S) return alert("Voice nije podržan");
+
+let r = new S();
+r.lang = "bs-BA";
+
+r.onresult = e => {
+msg.value = e.results[0][0].transcript;
+};
+
+r.start();
+}
+
+// ---------------- TELNYX CALL ----------------
+
+async function call() {
+
+if (!active) return alert("Izaberi klijenta");
+
+await fetch("https://YOUR_SUPABASE_FUNCTION/telnyx-call", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+to: clients[active].phone,
+telnyx_key: localStorage.getItem("telnyx"),
+groq_key: localStorage.getItem("groq"),
+name: active
+})
+});
+
+alert("Call poslat!");
+}
+
+// ---------------- INIT ----------------
+
+document.addEventListener("DOMContentLoaded", () => {
+load();
+render();
+loadPrompt();
+});
+
 </script>
+
 </body>
-</html
+</html>
