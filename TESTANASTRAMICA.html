@@ -145,6 +145,14 @@ function loadPrompt() {
     el.value = localStorage.getItem("system_prompt") || defaultPrompt;
 }
 
+    function speak(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "bs-BA";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+}
+
 function addClient() {
     const name = document.getElementById("clientName").value.trim();
     const phone = document.getElementById("clientPhone").value.trim();
@@ -227,6 +235,7 @@ async function send() {
 
     save();
     draw();
+speak(reply);
 }
 
 function draw() {
