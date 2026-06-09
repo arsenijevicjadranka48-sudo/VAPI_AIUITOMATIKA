@@ -6,7 +6,6 @@
 <title>AI Call Center CRM FULL</title>
 
 <style>
-/* Čistimo i izolujemo cijeli ekran da sakrijemo zalutali tekst sa servera */
 html, body {
 margin: 0;
 padding: 0;
@@ -30,6 +29,8 @@ box-sizing: border-box;
 .main {
 flex:1;
 padding:20px;
+display: flex;
+flex-direction: column;
 }
 
 input, textarea, button {
@@ -85,8 +86,8 @@ border-radius:10px;
 
 <h3>👥 Klijenti</h3>
 
-<input id="name" placeholder="Ime klijenta">
-<input id="phone" placeholder="Telefon">
+<input id="clientName" placeholder="Ime klijenta">
+<input id="clientPhone" placeholder="Telefon">
 
 <button class="btn" onclick="addClient()">Dodaj klijenta</button>
 
@@ -117,185 +118,183 @@ border-radius:10px;
 </div>
 
 <script>
-
-// TAČAN URL: Sada gasi tačno telnyx-webhook funkciju sa tvog dashboarda
 const FUNCTION_URL = "https://mpgbpgmsorunfbdskbwn.supabase.co/functions/v1/telnyx-webhook";
 
 let clients = JSON.parse(localStorage.getItem("clients") || "{}");
 let active = null;
 
-const defaultPrompt =
-`Ti si profesionalni AI sales agent u call centru.
+const defaultPrompt = `Ti si profesionalni AI sales agent u call centru.
 Tvoj zadatak je:
 - kratki i jasni odgovori
 - fokus na prodaju
 - vodi korisnika ka akciji
-- koristi lokalni jezik (BHS)
-`;
+- koristi lokalni jezik (BHS)`;
 
 function save() {
-localStorage.setItem("clients", JSON.stringify(clients));
+    localStorage.setItem("clients", JSON.stringify(clients));
 }
 
 function savePrompt() {
-localStorage.setItem("system_prompt", systemPrompt.value);
-alert("Prompt sačuvan!");
+    const sysPromptEl = document.getElementById("systemPrompt");
+    localStorage.setItem("system_prompt", sysPromptEl.value);
+    alert("Prompt sačuvan!");
 }
 
 function loadPrompt() {
-systemPrompt.value = localStorage.getItem("system_prompt") || defaultPrompt;
+    const sysPromptEl = document.getElementById("systemPrompt");
+    sysPromptEl.value = localStorage.getItem("system_prompt") || defaultPrompt;
 }
 
 function addClient() {
-if (!name.value || !phone.value) return alert("Popuni polja!");
+    const nameInput = document.getElementById("clientName");
+    const phoneInput = document.getElementById("clientPhone");
+    const listEl = document.getElementById("list");
 
-clients[name.value] = {
-phone: phone.value,
-chat: []
-};
+    if (!nameInput.value.trim() || !phoneInput.value.trim()) {
+        return alert("Popuni polja!");
+    }
 
-save();
-render();
-name.value = "";
-phone.value = "";
+    clients[nameInput.value.trim()] = {
+        phone: phoneInput.value.trim(),
+        chat: []
+    };
+
+    save();
+    render();
+    nameInput.value = "";
+    phoneInput.value = "";
 }
 
 function render() {
-list.innerHTML = "";
+    const listEl = document.getElementById("list");
+    const titleEl = document.getElementById("title");
+    listEl.innerHTML = "";
 
-Object.keys(clients).forEach(c => {
-let d = document.createElement("div");
-d.className = "client";
-
-d.innerHTML = `
-<strong>${c}</strong>
-<br>
-<small>📞 ${clients[c].phone}</small>
-`;
-
-d.onclick = () => {
-active = c;
-title.innerText = "📂 " + c;
-draw();
-};
-
-list.appendChild(d);
-});
+    Object.keys(clients).forEach(c => {
+        let d = document.createElement("div");
+        d.className = "client";
+        d.innerHTML = `<strong>${c}</strong><br><small>📞 ${clients[c].phone}</small>`;
+        
+        d.onclick = () => {
+            active = c;
+            titleEl.innerText = "📂 " + c;
+            draw();
+        };
+        listEl.appendChild(d);
+    });
 }
 
 async function ai(messages) {
-let system = localStorage.getItem("system_prompt") || defaultPrompt;
+    let system = localStorage.getItem("system_prompt") || defaultPrompt;
 
-try {
-    let res = await fetch(FUNCTION_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            action: "chat",
-            systemPrompt: system,
-            messages: messages
-        })
-    });
+    try {
+        let res = await fetch(FUNCTION_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                action: "chat",
+                systemPrompt: system,
+                messages: messages
+            })
+        });
 
-    let data = await res.json();
-    return data.reply || "AI error";
-} catch (err) {
-    console.error(err);
-    return "Greška u komunikaciji sa serverom.";
-}
+        let data = await res.json();
+        return data.reply || "AI error";
+    } catch (err) {
+        console.error(err);
+        return "Greška u komunikaciji sa serverom.";
+    }
 }
 
 async function send() {
-if (!active) return alert("Izaberi klijenta");
-if (!msg.value.trim()) return;
+    const msgInput = document.getElementById("msg");
+    if (!active) return alert("Izaberi klijenta");
+    if (!msgInput.value.trim()) return;
 
-if (!clients[active].chat) clients[active].chat = [];
+    if (!clients[active].chat) clients[active].chat = [];
 
-clients[active].chat.push({
-role: "user",
-content: msg.value
-});
+    clients[active].chat.push({
+        role: "user",
+        content: msgInput.value.trim()
+    });
 
-draw();
+    draw();
 
-let trenutnaPoruka = msg.value;
-msg.value = "AI razmišlja...";
+    let trenutnaPoruka = msgInput.value;
+    msgInput.value = "AI razmišlja...";
 
-let reply = await ai(clients[active].chat);
+    let reply = await ai(clients[active].chat);
 
-clients[active].chat.push({
-role: "assistant",
-content: reply
-});
+    clients[active].chat.push({
+        role: "assistant",
+        content: reply
+    });
 
-save();
-draw();
-msg.value = "";
+    save();
+    draw();
+    msgInput.value = "";
 }
 
 function draw() {
-chat.innerHTML = "";
+    const chatEl = document.getElementById("chat");
+    chatEl.innerHTML = "";
 
-if (!active) return;
+    if (!active) return;
 
-let c = clients[active].chat || [];
+    let c = clients[active].chat || [];
 
-c.forEach(m => {
-let d = document.createElement("div");
-d.className = m.role === "user" ? "user" : "ai";
-d.innerText = (m.role === "user" ? "TI: " : "AI: ") + m.content;
-chat.appendChild(d);
-});
+    c.forEach(m => {
+        let d = document.createElement("div");
+        d.className = m.role === "user" ? "user" : "ai";
+        d.innerText = (m.role === "user" ? "TI: " : "AI: ") + m.content;
+        chatEl.appendChild(d);
+    });
 
-chat.scrollTop = chat.scrollHeight;
+    chatEl.scrollTop = chatEl.scrollHeight;
 }
 
 function voice() {
-const S = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (!S) return alert("Voice nije podržan u ovom browseru");
+    const msgInput = document.getElementById("msg");
+    const S = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!S) return alert("Voice nije podržan u ovom browseru");
 
-let r = new S();
-r.lang = "bs-BA";
-
-r.onresult = e => {
-msg.value = e.results[0][0].transcript;
-};
-
-r.start();
+    let r = new S();
+    r.lang = "bs-BA";
+    r.onresult = e => {
+        msgInput.value = e.results[0][0].transcript;
+    };
+    r.start();
 }
 
 async function call() {
-if (!active) return alert("Izaberi klijenta");
+    if (!active) return alert("Izaberi klijenta");
 
-try {
-    let res = await fetch(FUNCTION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            action: "call",
-            to: clients[active].phone,
-            name: active
-        })
-    });
+    try {
+        let res = await fetch(FUNCTION_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                action: "call",
+                to: clients[active].phone,
+                name: active
+            })
+        });
 
-    if(res.ok) {
-        alert("Poziv uspješno pokrenut preko tvog Telnyx sistema!");
-    } else {
-        alert("Greška na serveru prilikom pokretanja poziva.");
+        if(res.ok) {
+            alert("Poziv uspješno pokrenut preko tvog Telnyx sistema!");
+        } else {
+            alert("Greška na serveru prilikom pokretanja poziva.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Konekcija sa serverom je prekinuta.");
     }
-} catch (err) {
-    console.error(err);
-    alert("Konekcija sa serverom je prekinuta.");
-}
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-render();
-loadPrompt();
+    render();
+    loadPrompt();
 });
-
 </script>
 
 </body>
