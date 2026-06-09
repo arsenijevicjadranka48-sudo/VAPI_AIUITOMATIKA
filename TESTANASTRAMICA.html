@@ -1,3 +1,6 @@
+Evo kompletnog, spojenog koda od prve do zadnje linije (<!DOCTYPE html> do </html>). Sve je čisto, spremno za kopiranje i odmah uvezano sa tvojom novom logikom bez ikakvih Vapi skripti ili ručnog upisivanja API ključeva.
+
+HTML
 <!DOCTYPE html>
 <html lang="bs">
 <head>
@@ -76,7 +79,6 @@ border-radius:10px;
 
 <body>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
 
 <h3>👥 Klijenti</h3>
@@ -90,16 +92,6 @@ border-radius:10px;
 
 <hr>
 
-<h3>🔑 API Podešavanja</h3>
-
-<input id="groq" type="password" placeholder="Groq API key">
-<input id="telnyx" type="password" placeholder="Telnyx API key">
-<input id="number" placeholder="Telnyx broj">
-
-<button class="btn" onclick="save()">💾 Sačuvaj</button>
-
-<hr>
-
 <h3>🧠 AI Prompt</h3>
 
 <textarea id="systemPrompt"></textarea>
@@ -108,7 +100,6 @@ border-radius:10px;
 
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
 <h2 id="title">📂 Nema izabranog klijenta</h2>
@@ -125,6 +116,9 @@ border-radius:10px;
 
 <script>
 
+// Centralni URL tvoje Supabase Edge funkcije koja sama čupa ključeve iz Secrets-a
+const FUNCTION_URL = "https://mpgbpgmsorunfbdskbwn.supabase.co/functions/v1/autovox-backend";
+
 let clients = JSON.parse(localStorage.getItem("clients") || "{}");
 let active = null;
 
@@ -138,20 +132,10 @@ Tvoj zadatak je:
 `;
 
 function save() {
-localStorage.setItem("groq", groq.value);
-localStorage.setItem("telnyx", telnyx.value);
-localStorage.setItem("number", number.value);
 localStorage.setItem("clients", JSON.stringify(clients));
-alert("Sačuvano!");
 }
 
-function load() {
-groq.value = localStorage.getItem("groq") || "";
-telnyx.value = localStorage.getItem("telnyx") || "";
-number.value = localStorage.getItem("number") || "";
-}
-
-// ---------------- PROMPT ----------------
+// ---------------- PROMPT PODEŠAVANJA ----------------
 
 function savePrompt() {
 localStorage.setItem("system_prompt", systemPrompt.value);
@@ -159,11 +143,10 @@ alert("Prompt sačuvan!");
 }
 
 function loadPrompt() {
-systemPrompt.value =
-localStorage.getItem("system_prompt") || defaultPrompt;
+systemPrompt.value = localStorage.getItem("system_prompt") || defaultPrompt;
 }
 
-// ---------------- CLIENTS ----------------
+// ---------------- UPRAVLJANJE KLIJENTIMA ----------------
 
 function addClient() {
 if (!name.value || !phone.value) return alert("Popuni polja!");
@@ -175,6 +158,8 @@ chat: []
 
 save();
 render();
+name.value = "";
+phone.value = "";
 }
 
 function render() {
@@ -200,39 +185,37 @@ list.appendChild(d);
 });
 }
 
-// ---------------- AI ----------------
+// ---------------- Slanje poruke na Groq (preko Supabase-a) ----------------
 
 async function ai(messages) {
+let system = localStorage.getItem("system_prompt") || defaultPrompt;
 
-let key = localStorage.getItem("groq");
+try {
+    let res = await fetch(FUNCTION_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            action: "chat",
+            systemPrompt: system,
+            messages: messages
+        })
+    });
 
-let system =
-localStorage.getItem("system_prompt") || defaultPrompt;
-
-let res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-method: "POST",
-headers: {
-"Authorization": "Bearer " + key,
-"Content-Type": "application/json"
-},
-body: JSON.stringify({
-model: "llama3-70b-8192",
-messages: [
-{ role: "system", content: system },
-...messages
-]
-})
-});
-
-let data = await res.json();
-return data.choices?.[0]?.message?.content || "AI error";
+    let data = await res.json();
+    return data.reply || "AI error";
+} catch (err) {
+    console.error(err);
+    return "Greška u komunikaciji sa serverom.";
+}
 }
 
-// ---------------- SEND ----------------
+// ---------------- CHAT LOGIKA NA EKRANU ----------------
 
 async function send() {
-
 if (!active) return alert("Izaberi klijenta");
+if (!msg.value.trim()) return;
 
 if (!clients[active].chat) clients[active].chat = [];
 
@@ -243,6 +226,9 @@ content: msg.value
 
 draw();
 
+let trenutnaPoruka = msg.value;
+msg.value = "AI razmišlja...";
+
 let reply = await ai(clients[active].chat);
 
 clients[active].chat.push({
@@ -252,11 +238,8 @@ content: reply
 
 save();
 draw();
-
 msg.value = "";
 }
-
-// ---------------- DRAW CHAT ----------------
 
 function draw() {
 chat.innerHTML = "";
@@ -268,21 +251,18 @@ let c = clients[active].chat || [];
 c.forEach(m => {
 let d = document.createElement("div");
 d.className = m.role === "user" ? "user" : "ai";
-
-d.innerText =
-(m.role === "user" ? "TI: " : "AI: ") + m.content;
-
+d.innerText = (m.role === "user" ? "TI: " : "AI: ") + m.content;
 chat.appendChild(d);
 });
 
 chat.scrollTop = chat.scrollHeight;
 }
 
-// ---------------- VOICE ----------------
+// ---------------- PREPOZNAVANJE GLASA (CRM Voice) ----------------
 
 function voice() {
 const S = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (!S) return alert("Voice nije podržan");
+if (!S) return alert("Voice nije podržan u ovom browseru");
 
 let r = new S();
 r.lang = "bs-BA";
@@ -294,30 +274,36 @@ msg.value = e.results[0][0].transcript;
 r.start();
 }
 
-// ---------------- TELNYX CALL ----------------
+// ---------------- POKRETANJE SVOJEG TELNYX POZIVNOG SISTEMA ----------------
 
 async function call() {
-
 if (!active) return alert("Izaberi klijenta");
 
-await fetch("https://YOUR_SUPABASE_FUNCTION/telnyx-call", {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify({
-to: clients[active].phone,
-telnyx_key: localStorage.getItem("telnyx"),
-groq_key: localStorage.getItem("groq"),
-name: active
-})
-});
+try {
+    let res = await fetch(FUNCTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "call",
+            to: clients[active].phone,
+            name: active
+        })
+    });
 
-alert("Call poslat!");
+    if(res.ok) {
+        alert("Poziv uspješno pokrenut preko tvog Telnyx sistema!");
+    } else {
+        alert("Greška na serveru prilikom pokretanja poziva.");
+    }
+} catch (err) {
+    console.error(err);
+    alert("Konekcija sa serverom je prekinuta.");
+}
 }
 
-// ---------------- INIT ----------------
+// ---------------- INICIJALIZACIJA NA STARTU ----------------
 
 document.addEventListener("DOMContentLoaded", () => {
-load();
 render();
 loadPrompt();
 });
