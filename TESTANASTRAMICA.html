@@ -76,6 +76,11 @@ border-radius:10px;
 
 .user { color:#00adb5; margin:5px 0; }
 .ai { color:#9b59b6; margin:5px 0; }
+
+.user::before, .ai::before {
+    content: "★ ";
+    color: #555;
+}
 </style>
 
 </head>
@@ -124,11 +129,17 @@ let clients = JSON.parse(localStorage.getItem("clients") || "{}");
 let active = null;
 
 const defaultPrompt = `Ti si profesionalni AI sales agent u call centru.
-Tvoj zadatak je:
+
+PRAVILO JEZIKA:
+- Odgovaraj isključivo na jeziku kojim ti se korisnik obraća
+- Ako korisnik piše bosanski, koristi bosanski
+- Ako piše engleski, koristi engleski
+- Ako piše srpski ili hrvatski, prilagodi stil
+
+Zadatak:
 - kratki i jasni odgovori
-- fokus na prodaju
-- vodi korisnika ka akciji
-- koristi lokalni jezik (BHS)`;
+- prodajni fokus
+- vodi korisnika ka akciji`;
 
 function save() {
     localStorage.setItem("clients", JSON.stringify(clients));
@@ -145,12 +156,14 @@ function loadPrompt() {
     el.value = localStorage.getItem("system_prompt") || defaultPrompt;
 }
 
-    function speak(text) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "bs-BA";
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
+function speak(text) {
+    window.speechSynthesis.cancel();
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "bs-BA";
+    u.rate = 1;
+
+    window.speechSynthesis.speak(u);
 }
 
 function addClient() {
@@ -192,7 +205,7 @@ function render() {
     });
 }
 
-async function ai(messages) {
+async function ai(messages, userText) {
     const system = localStorage.getItem("system_prompt") || defaultPrompt;
 
     try {
@@ -201,7 +214,7 @@ async function ai(messages) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 action: "chat",
-                systemPrompt: system,
+                systemPrompt: system + "\n\nKORISNIK INPUT: " + userText,
                 messages
             })
         });
@@ -214,28 +227,39 @@ async function ai(messages) {
     }
 }
 
+function detectLang(text) {
+    const t = text.toLowerCase();
+
+    if (/[čćžšđ]/.test(t) || t.includes("kako") || t.includes("šta")) return "bs";
+    if (t.includes("how") || t.includes("what") || t.includes("hello")) return "en";
+    return "auto";
+}
+
 async function send() {
     const input = document.getElementById("msg");
 
     if (!active) return alert("Izaberi klijenta");
     if (!input.value.trim()) return;
 
-    if (!clients[active].chat) clients[active].chat = [];
-
     const text = input.value.trim();
+
+    if (!clients[active].chat) clients[active].chat = [];
 
     clients[active].chat.push({ role: "user", content: text });
     draw();
 
     input.value = "";
 
-    const reply = await ai(clients[active].chat);
+    const langHint = detectLang(text);
+
+    const reply = await ai(clients[active].chat, "LANG=" + langHint);
 
     clients[active].chat.push({ role: "assistant", content: reply });
 
     save();
     draw();
-speak(reply);
+
+    speak(reply);
 }
 
 function draw() {
@@ -249,7 +273,11 @@ function draw() {
     chat.forEach(m => {
         const div = document.createElement("div");
         div.className = m.role === "user" ? "user" : "ai";
-        div.innerText = (m.role === "user" ? "TI: " : "AI: ") + m.content;
+
+        div.innerText =
+            (m.role === "user" ? "🎤 KORISNIK: " : "🤖 AI: ") +
+            m.content;
+
         chatEl.appendChild(div);
     });
 
@@ -257,26 +285,16 @@ function draw() {
 }
 
 function voice() {
-    const msgInput = document.getElementById("msg");
+    const input = document.getElementById("msg");
     const S = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!S) return alert("Voice nije podržan u ovom browseru");
+    if (!S) return alert("Voice nije podržan");
 
     const r = new S();
     r.lang = "bs-BA";
-    r.interimResults = false;
-
-    r.onstart = () => {
-        msgInput.value = "Slušam...";
-    };
 
     r.onresult = (e) => {
-        msgInput.value = e.results[0][0].transcript;
-    };
-
-    r.onerror = (e) => {
-        msgInput.value = "";
-        alert("Voice error: " + e.error);
+        input.value = e.results[0][0].transcript;
     };
 
     r.start();
@@ -285,26 +303,17 @@ function voice() {
 async function call() {
     if (!active) return alert("Izaberi klijenta");
 
-    try {
-        const res = await fetch(FUNCTION_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                action: "call",
-                to: clients[active].phone,
-                name: active
-            })
-        });
+    const res = await fetch(FUNCTION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "call",
+            to: clients[active].phone,
+            name: active
+        })
+    });
 
-        if (res.ok) {
-            alert("Poziv pokrenut!");
-        } else {
-            alert("Server greška pri pozivu.");
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Nema konekcije sa serverom.");
-    }
+    if (res.ok) alert("Poziv pokrenut!");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
