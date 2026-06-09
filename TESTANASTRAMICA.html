@@ -33,7 +33,7 @@ display: flex;
 flex-direction: column;
 }
 
-input, textarea, button {
+input, textarea, button, select {
 width:100%;
 padding:10px;
 margin-top:8px;
@@ -42,9 +42,14 @@ border:none;
 box-sizing:border-box;
 }
 
-input, textarea {
+input, textarea, select {
 background:#2a2a2a;
 color:white;
+}
+
+select {
+cursor: pointer;
+outline: none;
 }
 
 textarea {
@@ -76,11 +81,6 @@ border-radius:10px;
 
 .user { color:#00adb5; margin:5px 0; }
 .ai { color:#9b59b6; margin:5px 0; }
-
-.user::before, .ai::before {
-    content: "★ ";
-    color: #555;
-}
 </style>
 
 </head>
@@ -101,10 +101,18 @@ border-radius:10px;
 <hr>
 
 <h3>🧠 AI Prompt</h3>
-
 <textarea id="systemPrompt"></textarea>
-
 <button class="btn" onclick="savePrompt()">💾 Save Prompt</button>
+
+<hr>
+
+<h3>🎙️ TTS Provajder</h3>
+<select id="ttsProvider" onchange="handleProviderChange()">
+    <option value="elevenlabs">ElevenLabs</option>
+    <option value="deepgram">Deepgram</option>
+    <option value="google_tts">Google TTS (Napredni)</option>
+    <option value="google_standard" selected>Osnovna Google verzija</option>
+</select>
 
 </div>
 
@@ -156,14 +164,56 @@ function loadPrompt() {
     el.value = localStorage.getItem("system_prompt") || defaultPrompt;
 }
 
+function handleProviderChange() {
+    const provider = document.getElementById("ttsProvider").value;
+    console.log("Logika govora prebačena na: " + provider);
+    
+    if (provider !== "google_standard") {
+        window.speechSynthesis.cancel();
+    }
+}
+
 function speak(text) {
+    const provider = document.getElementById("ttsProvider").value;
+
+    // Stopiraj trenutni govor
     window.speechSynthesis.cancel();
 
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "bs-BA";
-    u.rate = 1;
+    if (provider === "google_standard") {
+        const u = new SpeechSynthesisUtterance(text);
+        
+        // Određivanje jezičkog koda na osnovu tvog Regex-a
+        let targetLang = "bs-BA";
+        if (/^[a-zA-Z0-9 .,!?'"()-]+$/.test(text)) {
+            targetLang = "en-US";
+        }
+        u.lang = targetLang;
 
-    window.speechSynthesis.speak(u);
+        // LOGIKA ZA PROMJENU GLASA: Traženje Google glasa u sistemu
+        const voices = window.speechSynthesis.getVoices();
+        
+        // Pokušaj pronaći glas koji pripada ciljanom jeziku I sadrži "Google" u imenu
+        let selectedVoice = voices.find(voice => 
+            voice.lang.startsWith(targetLang.split('-')[0]) && 
+            voice.name.toLowerCase().includes('google')
+        );
+
+        // Ako ne nađe striktno Google glas za taj jezik, uzmi bilo koji dostupan za taj jezik
+        if (!selectedVoice) {
+            selectedVoice = voices.find(voice => voice.lang.startsWith(targetLang.split('-')[0]));
+        }
+
+        // Ako je glas uspješno mapiran, dodijeli ga objektu
+        if (selectedVoice) {
+            u.voice = selectedVoice;
+            console.log("Učitani lokalni glas: " + selectedVoice.name);
+        }
+        
+        u.rate = 1;
+        window.speechSynthesis.speak(u);
+    } else {
+        console.log(`Govor se izvršava serverski putem provajdera: ${provider}`);
+    }
 }
 
 function addClient() {
@@ -207,6 +257,7 @@ function render() {
 
 async function ai(messages, userText) {
     const system = localStorage.getItem("system_prompt") || defaultPrompt;
+    const selectedTts = document.getElementById("ttsProvider").value;
 
     try {
         const res = await fetch(FUNCTION_URL, {
@@ -215,7 +266,10 @@ async function ai(messages, userText) {
             body: JSON.stringify({
                 action: "chat",
                 systemPrompt: system + "\n\nKORISNIK INPUT: " + userText,
-                messages
+                messages: messages,
+                ttsProvider: selectedTts,
+                endOnInterruption: true,
+                interruptionThreshold: 0.4
             })
         });
 
@@ -251,7 +305,6 @@ async function send() {
     input.value = "";
 
     const langHint = detectLang(text);
-
     const reply = await ai(clients[active].chat, "LANG=" + langHint);
 
     clients[active].chat.push({ role: "assistant", content: reply });
@@ -292,9 +345,17 @@ function voice() {
 
     const r = new S();
     r.lang = "bs-BA";
+    r.continuous = false;
+    r.interimResults = false;
+
+    r.onstart = () => {
+        window.speechSynthesis.cancel();
+        console.log("Korisnik priča, prekidam trenutni lokalni govor.");
+    };
 
     r.onresult = (e) => {
         input.value = e.results[0][0].transcript;
+        send();
     };
 
     r.start();
@@ -302,6 +363,7 @@ function voice() {
 
 async function call() {
     if (!active) return alert("Izaberi klijenta");
+    const selectedTts = document.getElementById("ttsProvider").value;
 
     const res = await fetch(FUNCTION_URL, {
         method: "POST",
@@ -309,7 +371,9 @@ async function call() {
         body: JSON.stringify({
             action: "call",
             to: clients[active].phone,
-            name: active
+            name: active,
+            ttsProvider: selectedTts,
+            endOnInterruption: true
         })
     });
 
@@ -319,6 +383,12 @@ async function call() {
 document.addEventListener("DOMContentLoaded", () => {
     render();
     loadPrompt();
+    handleProviderChange();
+    
+    // Osigurava da se lista glasova u browseru učita na vrijeme
+    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
 });
 </script>
 
